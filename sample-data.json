@@ -1,0 +1,207 @@
+{
+  "topics": [
+    {
+      "title": "Education System",
+      "description": "Discuss the education system in your country, including its strengths and weaknesses.",
+      "partNumber": 1,
+      "difficultyLevel": "intermediate",
+      "topicCategory": "Education",
+      "keywords": ["education", "school", "university", "learning", "curriculum", "students", "teachers"]
+    },
+    {
+      "title": "Describe a Memorable Journey",
+      "description": "Describe a journey you have taken that was particularly memorable. You should say where you went, who you went with, what you did, and explain why it was memorable.",
+      "partNumber": 2,
+      "difficultyLevel": "beginner",
+      "topicCategory": "Travel",
+      "keywords": ["travel", "journey", "trip", "vacation", "adventure", "experience", "memories"]
+    },
+    {
+      "title": "Technology and Society",
+      "description": "Discuss the impact of technology on modern society, including both positive and negative effects.",
+      "partNumber": 3,
+      "difficultyLevel": "advanced",
+      "topicCategory": "Technology",
+      "keywords": ["technology", "society", "internet", "social media", "innovation", "digital", "impact"]
+    },
+    {
+      "title": "Work and Career",
+      "description": "Talk about your job, career goals, and work-life balance.",
+      "partNumber": 1,
+      "difficultyLevel": "intermediate",
+      "topicCategory": "Work",
+      "keywords": ["work", "career", "job", "profession", "ambition", "balance", "colleagues"]
+    },
+    {
+      "title": "Describe a Person Who Influenced You",
+      "description": "Describe a person who has had a significant influence on your life. You should say who this person is, how you know them, what they did, and explain why they influenced you.",
+      "partNumber": 2,
+      "difficultyLevel": "intermediate",
+      "topicCategory": "People",
+      "keywords": ["person", "influence", "mentor", "role model", "inspiration", "guidance", "support"]
+    },
+    {
+      "title": "Climate Change and Environment",
+      "description": "Discuss the causes and effects of climate change, and what individuals and governments can do to address it.",
+      "partNumber": 3,
+      "difficultyLevel": "advanced",
+      "topicCategory": "Environment",
+      "keywords": ["climate", "environment", "pollution", "sustainability", "green", "carbon", "renewable"]
+    },
+    {
+      "title": "Hobbies and Interests",
+      "description": "Talk about your hobbies, interests, and how you spend your free time.",
+      "partNumber": 1,
+      "difficultyLevel": "beginner",
+      "topicCategory": "Lifestyle",
+      "keywords": ["hobbies", "interests", "leisure", "free time", "activities", "pastime", "enjoyment"]
+    },
+    {
+      "title": "Describe a Place You Would Like to Visit",
+      "description": "Describe a place you would like to visit in the future. You should say where it is, what you know about it, why you want to go there, and what you would do there.",
+      "partNumber": 2,
+      "difficultyLevel": "intermediate",
+      "topicCategory": "Travel",
+      "keywords": ["place", "destination", "travel", "visit", "explore", "culture", "attractions"]
+    },
+    {
+      "title": "Social Media and Communication",
+      "description": "Discuss how social media has changed the way people communicate and interact with each other.",
+      "partNumber": 3,
+      "difficultyLevel": "advanced",
+      "topicCategory": "Technology",
+      "keywords": ["social media", "communication", "interaction", "networking", "online", "relationships", "connectivity"]
+    },
+    {
+      "title": "Food and Culture",
+      "description": "Talk about traditional food in your country and its cultural significance.",
+      "partNumber": 1,
+      "difficultyLevel": "beginner",
+      "topicCategory": "Culture",
+      "keywords": ["food", "cuisine", "culture", "tradition", "cooking", "recipes", "heritage"]
+    }
+  ],
+  "questions": [
+    {
+      "questionText": "What do you think are the main advantages and disadvantages of the education system in your country?",
+      "questionType": "opinion",
+      "suggestedStructure": "Introduction - State your view\nMain point 1 - Advantage with example\nMain point 2 - Disadvantage with example\nConclusion - Summary",
+      "sampleAnswers": [
+        "I think the main advantage is that education is accessible to everyone, which promotes equality. However, a disadvantage is that the curriculum might be too rigid and doesn't allow for much creativity.",
+        "The education system provides a solid foundation in core subjects, which is good. But it could be improved by focusing more on practical skills that students will need in their careers."
+      ],
+      "keyVocabulary": ["curriculum", "accessible", "equality", "rigid", "creativity", "foundation", "practical skills"],
+      "estimatedBandRequirement": 6.5,
+      "timeLimitSeconds": 120
+    },
+    {
+      "questionText": "Describe a journey you have taken that was particularly memorable.",
+      "questionType": "describe",
+      "suggestedStructure": "When and where - Set the scene\nWho with - People involved\nWhat happened - Main events\nWhy memorable - Personal significance",
+      "sampleAnswers": [
+        "I'll never forget my trip to Japan last summer. I went with my family, and we visited Tokyo and Kyoto. What made it memorable was experiencing a completely different culture - the food, the temples, and the people were all amazing.",
+        "The most memorable journey for me was a road trip across the United States. I traveled with three friends, and we visited national parks and big cities. It was memorable because of the freedom and adventure we felt."
+      ],
+      "keyVocabulary": ["journey", "memorable", "culture", "experience", "adventure", "freedom", "exploration"],
+      "estimatedBandRequirement": 6.0,
+      "timeLimitSeconds": 180
+    },
+    {
+      "questionText": "How has technology changed the way we work and communicate in the modern world?",
+      "questionType": "discuss",
+      "suggestedStructure": "Introduction - Overview of changes\nPoint 1 - Work changes with examples\nPoint 2 - Communication changes with examples\nConclusion - Overall impact",
+      "sampleAnswers": [
+        "Technology has revolutionized both work and communication. In terms of work, remote working has become possible, allowing people to work from anywhere. Communication-wise, we can now instantly connect with people across the globe through video calls and messaging apps.",
+        "The impact of technology is profound. Work has become more efficient with automation and digital tools. Communication has become faster and more convenient, though some argue it has reduced face-to-face interaction."
+      ],
+      "keyVocabulary": ["technology", "revolutionized", "remote working", "automation", "digital tools", "communication", "interaction"],
+      "estimatedBandRequirement": 7.0,
+      "timeLimitSeconds": 150
+    },
+    {
+      "questionText": "What do you do for a living?",
+      "questionType": "personal",
+      "suggestedStructure": "Job title and company\nMain responsibilities\nWhat you like about it\nFuture plans",
+      "sampleAnswers": [
+        "I work as a software developer at a tech company. My main responsibilities include writing code, debugging, and working with a team on various projects. I really enjoy the problem-solving aspect of my job. In the future, I'd like to become a senior developer.",
+        "I'm a teacher at a local high school. I teach mathematics and really enjoy helping students understand complex concepts. The most rewarding part is seeing students succeed. I plan to continue teaching and maybe pursue a master's degree."
+      ],
+      "keyVocabulary": ["profession", "responsibilities", "career", "colleagues", "challenges", "satisfaction", "goals"],
+      "estimatedBandRequirement": 5.5,
+      "timeLimitSeconds": 90
+    },
+    {
+      "questionText": "Describe a person who has had a significant influence on your life.",
+      "questionType": "describe",
+      "suggestedStructure": "Who the person is\nHow you know them\nWhat they did or said\nWhy they influenced you",
+      "sampleAnswers": [
+        "My high school English teacher had a huge influence on me. She was very passionate about literature and encouraged me to read widely. She influenced me because she showed me that learning could be enjoyable and that I had potential I didn't realize.",
+        "My grandmother has been the most influential person in my life. She raised me and taught me important values like honesty and hard work. She influenced me by being a role model of kindness and resilience."
+      ],
+      "keyVocabulary": ["influence", "mentor", "role model", "inspiration", "guidance", "values", "impact"],
+      "estimatedBandRequirement": 6.5,
+      "timeLimitSeconds": 180
+    },
+    {
+      "questionText": "What are the main causes of climate change, and what can be done to address this issue?",
+      "questionType": "discuss",
+      "suggestedStructure": "Introduction - Define the problem\nCauses - Main factors\nSolutions - Individual and government actions\nConclusion - Importance of action",
+      "sampleAnswers": [
+        "Climate change is primarily caused by greenhouse gas emissions from human activities like burning fossil fuels and deforestation. To address this, individuals can reduce their carbon footprint by using public transport, while governments can invest in renewable energy and set emission targets.",
+        "The main causes include industrial emissions, transportation, and agriculture. Solutions require both individual efforts like recycling and using energy-efficient appliances, and government policies such as carbon taxes and promoting green technology."
+      ],
+      "keyVocabulary": ["climate change", "greenhouse gases", "emissions", "carbon footprint", "renewable energy", "sustainability", "environmental"],
+      "estimatedBandRequirement": 7.5,
+      "timeLimitSeconds": 180
+    },
+    {
+      "questionText": "What are your hobbies?",
+      "questionType": "personal",
+      "suggestedStructure": "Main hobbies\nHow often you do them\nWhy you enjoy them\nHow long you've been doing them",
+      "sampleAnswers": [
+        "I have several hobbies. I enjoy reading, especially science fiction novels, and I read almost every evening. I also like playing guitar, which I've been doing for about five years. I find these activities relaxing and they help me unwind after work.",
+        "My main hobby is photography. I go out taking photos almost every weekend, especially nature and street photography. I've been doing this for three years now. I love it because it allows me to be creative and capture beautiful moments."
+      ],
+      "keyVocabulary": ["hobbies", "leisure", "pastime", "enjoyment", "relaxation", "creative", "interest"],
+      "estimatedBandRequirement": 5.0,
+      "timeLimitSeconds": 90
+    },
+    {
+      "questionText": "Describe a place you would like to visit in the future.",
+      "questionType": "describe",
+      "suggestedStructure": "Where it is\nWhat you know about it\nWhy you want to go\nWhat you would do there",
+      "sampleAnswers": [
+        "I'd love to visit Iceland in the future. I know it's famous for its natural beauty, including geysers, waterfalls, and the Northern Lights. I want to go because I'm fascinated by nature and photography. I would explore the countryside, take photos, and maybe try some local cuisine.",
+        "My dream destination is Japan, specifically Tokyo and Kyoto. I know it has a rich culture, amazing food, and beautiful temples. I want to visit because I'm interested in Japanese culture and technology. I would visit historical sites, try authentic Japanese food, and experience the unique blend of tradition and modernity."
+      ],
+      "keyVocabulary": ["destination", "visit", "explore", "culture", "attractions", "experience", "fascinated"],
+      "estimatedBandRequirement": 6.0,
+      "timeLimitSeconds": 180
+    },
+    {
+      "questionText": "How has social media changed the way people communicate and interact?",
+      "questionType": "discuss",
+      "suggestedStructure": "Introduction - Overview\nPositive changes\nNegative changes\nConclusion - Balanced view",
+      "sampleAnswers": [
+        "Social media has fundamentally changed communication. Positively, it allows instant connection with people worldwide and makes it easier to maintain long-distance relationships. However, it has also reduced face-to-face interaction and can sometimes lead to misunderstandings due to lack of context.",
+        "The impact is mixed. On one hand, social media enables real-time communication and information sharing. On the other hand, it may have reduced the quality of interactions and created issues like cyberbullying. Overall, it's a powerful tool that needs to be used responsibly."
+      ],
+      "keyVocabulary": ["social media", "communication", "interaction", "connectivity", "relationships", "misunderstanding", "cyberbullying"],
+      "estimatedBandRequirement": 7.0,
+      "timeLimitSeconds": 150
+    },
+    {
+      "questionText": "What is traditional food like in your country?",
+      "questionType": "personal",
+      "suggestedStructure": "Main dishes\nIngredients and cooking methods\nCultural significance\nWhen it's eaten",
+      "sampleAnswers": [
+        "In my country, traditional food varies by region, but common dishes include rice, noodles, and various meat and vegetable dishes. We use a lot of spices and herbs. These foods are important during festivals and family gatherings, representing our cultural heritage.",
+        "Our traditional cuisine is known for its bold flavors and use of fresh ingredients. Popular dishes include stews, grilled meats, and bread. These foods are central to our culture and are often prepared for special occasions and celebrations."
+      ],
+      "keyVocabulary": ["cuisine", "traditional", "ingredients", "spices", "heritage", "culture", "festivals"],
+      "estimatedBandRequirement": 5.5,
+      "timeLimitSeconds": 90
+    }
+  ]
+}
+
