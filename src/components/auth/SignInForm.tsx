@@ -6,21 +6,21 @@ import Label from "@/components/form/Label";
 import Button from "@/components/ui/button/Button";
 import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "@/icons";
 import Link from "next/link";
-import React, { FormEvent, useMemo, useState } from "react";
+import React, { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useLoginMutation } from "@/store/api/authApi";
-import { isFetchBaseQueryError } from "@reduxjs/toolkit/query";
+import { useLoginMutation, useMeQuery } from "@/store/api/authApi";
 import type { SerializedError } from "@reduxjs/toolkit";
+import { useTranslation } from "react-i18next";
+import { LanguageToggleButton } from "@/components/common/LanguageToggleButton";
 
 const getErrorMessage = (
-  error: unknown,
-  fallback = "Unable to sign in. Please try again."
+  error: any,
+  fallback: string
 ) => {
-  if (isFetchBaseQueryError(error)) {
-    const data = error.data as
-      | { detail?: string; message?: string }
-      | string
-      | undefined;
+  if (error && typeof error === "object" && "status" in error) {
+    const data =
+      (error.data as { detail?: string; message?: string } | string | undefined) ??
+      undefined;
     if (typeof data === "string") return data;
     if (data?.detail) return data.detail;
     if (data?.message) return data.message;
@@ -41,6 +41,26 @@ export default function SignInForm() {
   const [formError, setFormError] = useState<string | null>(null);
 
   const [login, { isLoading }] = useLoginMutation();
+  const { data: me } = useMeQuery();
+  const { t } = useTranslation();
+
+  // Nếu đã đăng nhập (cookie còn hợp lệ và /me trả về user), tự động chuyển về trang home hoặc redirect URL
+  useEffect(() => {
+    if (me) {
+      // Get redirect param from URL
+      if (typeof window !== "undefined") {
+        const searchParams = new URLSearchParams(window.location.search);
+        const redirect = searchParams.get("redirect");
+        if (redirect) {
+          router.replace(decodeURIComponent(redirect));
+        } else {
+          router.replace("/");
+        }
+      } else {
+        router.replace("/");
+      }
+    }
+  }, [me, router]);
 
   const isSubmitDisabled = useMemo(() => {
     return !email.trim() || !password.trim() || isLoading;
@@ -49,7 +69,7 @@ export default function SignInForm() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!email || !password) {
-      setFormError("Email and password are required.");
+      setFormError(t("auth.emailRequired", "Email and password are required."));
       return;
     }
     setFormError(null);
@@ -57,29 +77,35 @@ export default function SignInForm() {
       await login({ email: email.trim(), password }).unwrap();
       router.push("/");
     } catch (error) {
-      setFormError(getErrorMessage(error));
+      setFormError(getErrorMessage(error, t("auth.signInError", "Unable to sign in. Please try again.")));
     }
   };
 
   return (
     <div className="flex flex-col flex-1 lg:w-1/2 w-full">
       <div className="w-full max-w-md sm:pt-10 mx-auto mb-5">
-        <Link
-          href="/"
-          className="inline-flex items-center text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-        >
-          <ChevronLeftIcon />
-          Back to dashboard
-        </Link>
+        <div className="flex items-center justify-between">
+          <Link
+            href="/"
+            className="inline-flex items-center text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+          >
+            <ChevronLeftIcon />
+            {t("auth.backToDashboard", "Back to dashboard")}
+          </Link>
+          <LanguageToggleButton />
+        </div>
       </div>
       <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
         <div>
           <div className="mb-5 sm:mb-8">
             <h1 className="mb-2 font-semibold text-gray-800 text-title-sm dark:text-white/90 sm:text-title-md">
-              Sign In
+              {t("auth.signInTitle", "Sign in")}
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Enter your email and password to sign in!
+              {t(
+                "auth.signInSubtitle",
+                "Enter your email and password to sign in to your speaking practice account."
+              )}
             </p>
           </div>
           <div>
@@ -109,7 +135,7 @@ export default function SignInForm() {
                     fill="#EB4335"
                   />
                 </svg>
-                Sign in with Google
+                {t("auth.signInWithGoogle", "Đăng nhập với Google")}
               </button>
               <button className="inline-flex items-center justify-center gap-3 py-3 text-sm font-normal text-gray-700 transition-colors bg-gray-100 rounded-lg px-7 hover:bg-gray-200 hover:text-gray-800 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10">
                 <svg
@@ -122,7 +148,7 @@ export default function SignInForm() {
                 >
                   <path d="M15.6705 1.875H18.4272L12.4047 8.75833L19.4897 18.125H13.9422L9.59717 12.4442L4.62554 18.125H1.86721L8.30887 10.7625L1.51221 1.875H7.20054L11.128 7.0675L15.6705 1.875ZM14.703 16.475H16.2305L6.37054 3.43833H4.73137L14.703 16.475Z" />
                 </svg>
-                Sign in with X
+                {t("auth.signInWithX", "Đăng nhập với X")}
               </button>
             </div>
             <div className="relative py-3 sm:py-5">
@@ -131,7 +157,7 @@ export default function SignInForm() {
               </div>
               <div className="relative flex justify-center text-sm">
                 <span className="p-2 text-gray-400 bg-white dark:bg-gray-900 sm:px-5 sm:py-2">
-                  Or
+                  {t("auth.or", "Hoặc")}
                 </span>
               </div>
             </div>
@@ -139,10 +165,11 @@ export default function SignInForm() {
               <div className="space-y-6">
                 <div>
                   <Label>
-                    Email <span className="text-error-500">*</span>{" "}
+                    {t("auth.emailLabel", "Email")}{" "}
+                    <span className="text-error-500">*</span>{" "}
                   </Label>
                   <Input
-                    placeholder="info@gmail.com"
+                    placeholder={t("auth.emailPlaceholder", "Enter your email")}
                     type="email"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
@@ -150,12 +177,13 @@ export default function SignInForm() {
                 </div>
                 <div>
                   <Label>
-                    Password <span className="text-error-500">*</span>{" "}
+                    {t("auth.passwordLabel", "Mật khẩu")}{" "}
+                    <span className="text-error-500">*</span>{" "}
                   </Label>
                   <div className="relative">
                     <Input
                       type={showPassword ? "text" : "password"}
-                      placeholder="Enter your password"
+                      placeholder={t("auth.passwordPlaceholder", "Enter your password")}
                       value={password}
                       onChange={(event) => setPassword(event.target.value)}
                     />
@@ -175,14 +203,14 @@ export default function SignInForm() {
                   <div className="flex items-center gap-3">
                     <Checkbox checked={isChecked} onChange={setIsChecked} />
                     <span className="block font-normal text-gray-700 text-theme-sm dark:text-gray-400">
-                      Keep me logged in
+                      {t("auth.keepLoggedIn", "Keep me logged in")}
                     </span>
                   </div>
                   <Link
                     href="/reset-password"
                     className="text-sm text-brand-500 hover:text-brand-600 dark:text-brand-400"
                   >
-                    Forgot password?
+                    {t("auth.forgotPassword", "Quên mật khẩu?")}
                   </Link>
                 </div>
                 {formError && (
@@ -198,7 +226,7 @@ export default function SignInForm() {
                     disabled={isSubmitDisabled}
                     isLoading={isLoading}
                   >
-                    Sign in
+                    {t("auth.signInButton", "Sign in")}
                   </Button>
                 </div>
               </div>
@@ -206,12 +234,12 @@ export default function SignInForm() {
 
             <div className="mt-5">
               <p className="text-sm font-normal text-center text-gray-700 dark:text-gray-400 sm:text-start">
-                Don&apos;t have an account? {""}
+                {t("auth.dontHaveAccount", "Don't have an account?")}{" "}
                 <Link
                   href="/signup"
                   className="text-brand-500 hover:text-brand-600 dark:text-brand-400"
                 >
-                  Sign Up
+                  {t("auth.signUpLink", "Sign Up")}
                 </Link>
               </p>
             </div>

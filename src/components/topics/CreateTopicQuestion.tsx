@@ -1,16 +1,12 @@
 "use client";
 
 import { FormEvent, useState, useMemo, useEffect } from "react";
-import {
-  useCreateTopicMutation,
-  useCreateQuestionMutation,
-  useGetTopicsQuery,
-} from "@/store/api/contentApi";
+import { useCreateTopicMutation, useGetTopicsQuery } from "@/store/api/topicApi";
+import { useCreateQuestionMutation } from "@/store/api/questionApi";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import TextArea from "@/components/form/input/TextArea";
 import Button from "@/components/ui/button/Button";
-import { isFetchBaseQueryError } from "@reduxjs/toolkit/query";
 import type { SerializedError } from "@reduxjs/toolkit";
 
 const difficultyOptions = [
@@ -35,12 +31,14 @@ const questionTypeOptions = [
 ];
 
 const getErrorMessage = (error: unknown, fallback: string) => {
-  if (isFetchBaseQueryError(error)) {
-    const data = error.data as { detail?: string; message?: string } | string | undefined;
+  // Check if error is a FetchBaseQueryError-like object
+  if (error && typeof error === "object" && "status" in error && "data" in error) {
+    const fetchError = error as { status: string | number; data?: unknown };
+    const data = fetchError.data as { detail?: string; message?: string } | string | undefined;
     if (typeof data === "string") return data;
-    if (data?.detail) return data.detail;
-    if (data?.message) return data.message;
-    return `Request failed with status ${error.status}`;
+    if (data && typeof data === "object" && "detail" in data) return String(data.detail);
+    if (data && typeof data === "object" && "message" in data) return String(data.message);
+    return `Request failed with status ${fetchError.status}`;
   }
   if (error && typeof error === "object" && "message" in error) {
     return String((error as SerializedError).message ?? fallback);

@@ -1,22 +1,21 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type {
-  TopicDto,
-  CreateTopicRequest,
-  UpdateTopicRequest,
   QuestionDto,
   CreateQuestionRequest,
   UpdateQuestionRequest,
   OutlineDto,
 } from "@/store/types/topics";
+import type { ApiResponse } from "@/store/types";
 import type { RootState } from "@/store/store";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000";
 
-export const contentApi = createApi({
-  reducerPath: "contentApi",
+export const questionApi = createApi({
+  reducerPath: "questionApi",
   baseQuery: fetchBaseQuery({
     baseUrl: API_BASE_URL,
+    credentials: "include",
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState).auth.accessToken;
       if (token) {
@@ -26,56 +25,8 @@ export const contentApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ["Topic", "Question"],
+  tagTypes: ["Question"],
   endpoints: (builder) => ({
-    // Topics
-    getTopics: builder.query<TopicDto[], { partNumber?: number; category?: string; includeInactive?: boolean }>({
-      query: (params) => {
-        const searchParams = new URLSearchParams();
-        if (params.partNumber) searchParams.append("partNumber", params.partNumber.toString());
-        if (params.category) searchParams.append("category", params.category);
-        if (params.includeInactive) searchParams.append("includeInactive", "true");
-        return `/api/topics?${searchParams.toString()}`;
-      },
-      providesTags: ["Topic"],
-    }),
-    getTopicById: builder.query<TopicDto, string>({
-      query: (id) => `/api/topics/${id}`,
-      providesTags: (result, error, id) => [{ type: "Topic", id }],
-    }),
-    getTopicBySlug: builder.query<TopicDto, string>({
-      query: (slug) => `/api/topics/slug/${slug}`,
-      providesTags: (result) => [{ type: "Topic", id: result?.id }],
-    }),
-    getPopularTopics: builder.query<TopicDto[], number | void>({
-      query: (limit = 10) => `/api/topics/popular?limit=${limit}`,
-      providesTags: ["Topic"],
-    }),
-    createTopic: builder.mutation<TopicDto, CreateTopicRequest>({
-      query: (body) => ({
-        url: "/api/topics",
-        method: "POST",
-        body,
-      }),
-      invalidatesTags: ["Topic"],
-    }),
-    updateTopic: builder.mutation<TopicDto, { id: string; data: UpdateTopicRequest }>({
-      query: ({ id, data }) => ({
-        url: `/api/topics/${id}`,
-        method: "PUT",
-        body: data,
-      }),
-      invalidatesTags: (result, error, { id }) => [{ type: "Topic", id }],
-    }),
-    deleteTopic: builder.mutation<void, string>({
-      query: (id) => ({
-        url: `/api/topics/${id}`,
-        method: "DELETE",
-      }),
-      invalidatesTags: ["Topic"],
-    }),
-
-    // Questions
     getQuestions: builder.query<QuestionDto[], { topicId?: string; includeInactive?: boolean }>({
       query: (params) => {
         const searchParams = new URLSearchParams();
@@ -83,6 +34,7 @@ export const contentApi = createApi({
         if (params.includeInactive) searchParams.append("includeInactive", "true");
         return `/api/questions?${searchParams.toString()}`;
       },
+      transformResponse: (response: ApiResponse<QuestionDto[]>) => response.data ?? [],
       providesTags: ["Question"],
     }),
     getQuestionById: builder.query<QuestionDto, string>({
@@ -117,10 +69,8 @@ export const contentApi = createApi({
         method: "POST",
         body,
       }),
-      invalidatesTags: (result) => [
-        "Question",
-        { type: "Topic", id: result?.topicId },
-      ],
+      invalidatesTags: ["Question"],
+      // Note: If you need to invalidate Topic cache, you'll need to use a shared tag or invalidate manually
     }),
     updateQuestion: builder.mutation<QuestionDto, { id: string; data: UpdateQuestionRequest }>({
       query: ({ id, data }) => ({
@@ -128,10 +78,7 @@ export const contentApi = createApi({
         method: "PUT",
         body: data,
       }),
-      invalidatesTags: (result, error, { id }) => [
-        { type: "Question", id },
-        { type: "Topic", id: result?.topicId },
-      ],
+      invalidatesTags: (result, error, { id }) => [{ type: "Question", id }],
     }),
     deleteQuestion: builder.mutation<void, string>({
       query: (id) => ({
@@ -144,13 +91,6 @@ export const contentApi = createApi({
 });
 
 export const {
-  useGetTopicsQuery,
-  useGetTopicByIdQuery,
-  useGetTopicBySlugQuery,
-  useGetPopularTopicsQuery,
-  useCreateTopicMutation,
-  useUpdateTopicMutation,
-  useDeleteTopicMutation,
   useGetQuestionsQuery,
   useGetQuestionByIdQuery,
   useGenerateOutlineForQuestionMutation,
@@ -158,5 +98,5 @@ export const {
   useCreateQuestionMutation,
   useUpdateQuestionMutation,
   useDeleteQuestionMutation,
-} = contentApi;
+} = questionApi;
 

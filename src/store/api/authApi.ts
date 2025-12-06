@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type {
+  ApiResponse,
   AuthResponse,
   LoginRequest,
   RefreshTokenRequest,
@@ -17,8 +18,10 @@ const API_BASE_URL =
 
 export const authApi = createApi({
   reducerPath: "authApi",
+
   baseQuery: fetchBaseQuery({
     baseUrl: API_BASE_URL,
+    credentials: "include",
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState).auth.accessToken;
       if (token) {
@@ -35,11 +38,12 @@ export const authApi = createApi({
         method: "POST",
         body: credentials,
       }),
+      transformResponse: (response: ApiResponse<AuthResponse>) => response.data,
       async onQueryStarted(_, { dispatch, queryFulfilled }) {
         try {
           const { data } = await queryFulfilled;
           dispatch(setCredentials(data));
-          persistAuthSession(data);
+          // Tokens are stored in cookies by the backend; do not persist in localStorage.
         } catch {
           /* noop */
         }
@@ -51,11 +55,12 @@ export const authApi = createApi({
         method: "POST",
         body: payload,
       }),
+      transformResponse: (response: ApiResponse<AuthResponse>) => response.data,
       async onQueryStarted(_, { dispatch, queryFulfilled }) {
         try {
           const { data } = await queryFulfilled;
           dispatch(setCredentials(data));
-          persistAuthSession(data);
+          // Tokens are stored in cookies by the backend; do not persist in localStorage.
         } catch {
           /* noop */
         }
@@ -67,11 +72,12 @@ export const authApi = createApi({
         method: "POST",
         body: payload,
       }),
+      transformResponse: (response: ApiResponse<AuthResponse>) => response.data,
       async onQueryStarted(_, { dispatch, queryFulfilled }) {
         try {
           const { data } = await queryFulfilled;
           dispatch(setCredentials(data));
-          persistAuthSession(data);
+          // Tokens are stored in cookies by the backend; do not persist in localStorage.
         } catch {
           dispatch(clearCredentials());
           clearAuthSession();
@@ -80,6 +86,9 @@ export const authApi = createApi({
     }),
     me: builder.query<AuthResponse["user"], void>({
       query: () => "/api/auth/me",
+      transformResponse: (
+        response: ApiResponse<AuthResponse["user"]>
+      ) => response.data,
     }),
     logout: builder.mutation<{ message: string }, RefreshTokenRequest | void>({
       query: (payload) => ({

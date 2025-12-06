@@ -7,13 +7,14 @@ export const metadata: Metadata = {
 };
 
 type TopicDetailPageProps = {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 };
 
-const TopicDetailPage = ({ params }: TopicDetailPageProps) => {
-  return <TopicDetail topicId={params.id} />;
+const TopicDetailPage = async ({ params }: TopicDetailPageProps) => {
+  const { id } = await params;
+  return <TopicDetail topicId={id} />;
 };
 
 export default TopicDetailPage;

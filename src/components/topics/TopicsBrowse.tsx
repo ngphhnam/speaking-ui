@@ -1,10 +1,11 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { useGetTopicsQuery, useGetPopularTopicsQuery } from "@/store/api/contentApi";
+import { useGetTopicsQuery, useGetPopularTopicsQuery } from "@/store/api/topicApi";
 import Link from "next/link";
 import Button from "@/components/ui/button/Button";
-import { isFetchBaseQueryError } from "@reduxjs/toolkit/query";
+import { useTranslation } from "react-i18next";
+import { useAppSelector } from "@/store/hooks";
 
 const difficultyColors: Record<string, string> = {
   beginner: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
@@ -23,6 +24,9 @@ export default function TopicsBrowse() {
   const [filter, setFilter] = useState<"all" | "popular">("all");
   const [partFilter, setPartFilter] = useState<number | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string>("");
+  const { t } = useTranslation();
+  const { user } = useAppSelector((state) => state.auth);
+  const isAdmin = user?.role === "Admin";
 
   useEffect(() => {
     setMounted(true);
@@ -71,14 +75,14 @@ export default function TopicsBrowse() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-semibold text-gray-900 dark:text-white">
-              Browse Topics
+              {t("topics.pageTitle")}
             </h1>
             <p className="text-base text-gray-600 dark:text-gray-300 mt-1">
-              Select a topic to start practicing your speaking skills
+              {t("topics.pageSubtitle")}
             </p>
           </div>
           <Link href="/topics/create">
-            <Button>Create Topic</Button>
+            <Button>{t("topics.createTopic")}</Button>
           </Link>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -97,17 +101,17 @@ export default function TopicsBrowse() {
     );
   }
 
-  if (error && isFetchBaseQueryError(error)) {
+  if (error) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <p className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-            Error loading topics
+            {t("topics.loadingErrorTitle")}
           </p>
           <p className="text-sm text-gray-600 dark:text-gray-400">
             {error.status === "FETCH_ERROR"
-              ? "Unable to connect to the server"
-              : `Request failed with status ${error.status}`}
+              ? t("topics.loadingErrorOffline")
+              : t("topics.loadingErrorStatus", { status: error.status })}
           </p>
         </div>
       </div>
@@ -119,15 +123,17 @@ export default function TopicsBrowse() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-semibold text-gray-900 dark:text-white">
-            Browse Topics
+            {t("topics.pageTitle")}
           </h1>
           <p className="text-base text-gray-600 dark:text-gray-300 mt-1">
-            Select a topic to start practicing your speaking skills
+            {t("topics.pageSubtitle")}
           </p>
         </div>
+        {isAdmin && (
         <Link href="/topics/create">
-          <Button>Create Topic</Button>
+            <Button>{t("topics.createTopic")}</Button>
         </Link>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-3">
@@ -143,7 +149,7 @@ export default function TopicsBrowse() {
               : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
           }`}
         >
-          All Topics
+          {t("topics.allTopics")}
         </button>
         <button
           onClick={() => setFilter("popular")}
@@ -153,7 +159,7 @@ export default function TopicsBrowse() {
               : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
           }`}
         >
-          Popular
+          {t("topics.popular")}
         </button>
       </div>
 
@@ -164,10 +170,10 @@ export default function TopicsBrowse() {
             onChange={(e) => setPartFilter(e.target.value ? Number(e.target.value) : null)}
             className="px-4 py-2 rounded-lg border border-gray-200 bg-white text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
           >
-            <option value="">All Parts</option>
+            <option value="">{t("topics.allParts")}</option>
             {parts.map((part) => (
               <option key={part} value={part}>
-                {partLabels[part] ?? `Part ${part}`}
+                {partLabels[part] ?? t("topics.partLabel", { part })}
               </option>
             ))}
           </select>
@@ -176,7 +182,7 @@ export default function TopicsBrowse() {
             onChange={(e) => setCategoryFilter(e.target.value)}
             className="px-4 py-2 rounded-lg border border-gray-200 bg-white text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
           >
-            <option value="">All Categories</option>
+            <option value="">{t("topics.allCategories")}</option>
             {categories.map((cat) => (
               <option key={cat} value={cat}>
                 {cat}
@@ -202,27 +208,27 @@ export default function TopicsBrowse() {
       ) : topics.length === 0 ? (
         <div className="rounded-xl border border-gray-200 bg-white p-12 text-center dark:border-gray-800 dark:bg-gray-900">
           <p className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-            No topics found
+            {t("topics.noTopicsTitle")}
           </p>
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
             {filter === "popular"
-              ? "No popular topics available yet"
-              : "Try adjusting your filters or create a new topic"}
+              ? t("topics.noTopicsPopular")
+              : t("topics.noTopicsAll")}
           </p>
           {filter === "all" && (
             <Link href="/topics/create">
-              <Button>Create Your First Topic</Button>
+              <Button>{t("topics.createFirstTopic")}</Button>
             </Link>
           )}
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {topics.map((topic) => (
-            <Link
+            <div
               key={topic.id}
-              href={`/topics/${topic.id}`}
               className="group rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition hover:border-brand-500 hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:border-brand-500"
             >
+              <Link href={`/topics/${topic.id}`} className="block">
               <div className="flex items-start justify-between gap-3 mb-3">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400">
                   {topic.title}
@@ -271,6 +277,16 @@ export default function TopicsBrowse() {
                 )}
               </div>
             </Link>
+              {isAdmin && (
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-800">
+                  <Link href={`/topics/${topic.id}/questions/create`}>
+                    <Button size="sm" variant="outline" className="w-full">
+                      {t("topics.addQuestion")}
+                    </Button>
+                  </Link>
+                </div>
+              )}
+            </div>
           ))}
         </div>
       )}
