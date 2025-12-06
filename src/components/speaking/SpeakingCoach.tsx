@@ -1,327 +1,225 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import {
-  ApiError,
-  scoreSpeech,
-  ScoreSpeechResponse,
-  SpeakingLevel,
-} from "@/lib/api/speaking";
-import { readSelectedTopic } from "@/store/topics";
-
-const speakingLevels: { value: SpeakingLevel; label: string; helper: string }[] = [
-  { value: "beginner", label: "Beginner", helper: "Simple sentence focus" },
-  {
-    value: "intermediate",
-    label: "Intermediate",
-    helper: "Balanced vocabulary and structure",
-  },
-  {
-    value: "advanced",
-    label: "Advanced",
-    helper: "Complex structures and nuance",
-  },
-];
+import { useTranslation } from "react-i18next";
 
 const SpeakingCoach = () => {
-  const [scoreForm, setScoreForm] = useState({
-    transcription: "",
-    topic: "",
-    level: "intermediate" as SpeakingLevel,
-  });
-  const [scoreResult, setScoreResult] = useState<ScoreSpeechResponse | null>(null);
-  const [scoreLoading, setScoreLoading] = useState(false);
-  const [scoreError, setScoreError] = useState<string | null>(null);
+  const { t } = useTranslation();
 
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingError, setRecordingError] = useState<string | null>(null);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
-
-  useEffect(() => {
-    const selected = readSelectedTopic();
-    if (!selected) return;
-    setScoreForm((prev) => ({
-      ...prev,
-      topic: selected.title || prev.topic,
-    }));
-  }, []);
-
-  const onScoreSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!scoreForm.transcription.trim()) {
-      setScoreError("Please provide a transcription to score.");
-      return;
-    }
-    setScoreError(null);
-    setScoreLoading(true);
-    try {
-      const response = await scoreSpeech({
-        transcription: scoreForm.transcription.trim(),
-        topic: scoreForm.topic.trim() || undefined,
-        level: scoreForm.level,
-      });
-      setScoreResult(response);
-    } catch (error) {
-      const message =
-        error instanceof ApiError
-          ? error.payload && typeof error.payload === "object"
-            ? JSON.stringify(error.payload)
-            : error.message
-          : "Unable to score response. Please try again.";
-      setScoreError(message);
-    } finally {
-      setScoreLoading(false);
-    }
-  };
-
-  const handleStartRecording = () => {
-    if (typeof window === "undefined") return;
-
-    const SpeechRecognition =
-      (window as Window & { SpeechRecognition?: typeof SpeechRecognition }).SpeechRecognition ||
-      (window as Window & { webkitSpeechRecognition?: typeof SpeechRecognition })
-        .webkitSpeechRecognition;
-
-    if (!SpeechRecognition) {
-      setRecordingError(
-        "Speech recognition is not supported in this browser. Please use Chrome on desktop."
-      );
-      return;
-    }
-
-    try {
-      const recognition = new SpeechRecognition();
-      recognition.lang = "en-US";
-      recognition.interimResults = true;
-      recognition.continuous = true;
-
-      recognition.onresult = (event: SpeechRecognitionEvent) => {
-        let transcript = "";
-        for (let i = 0; i < event.results.length; i++) {
-          transcript += event.results[i][0].transcript;
-        }
-        setScoreForm((prev) => ({
-          ...prev,
-          transcription: transcript,
-        }));
-      };
-
-      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-        if (event.error === "not-allowed" || event.error === "permission-denied") {
-          setRecordingError(
-            "Microphone access was denied. Please allow access and try again."
-          );
-        } else {
-          setRecordingError("Speech recognition error. Please try again.");
-        }
-        setIsRecording(false);
-      };
-
-      recognition.onend = () => {
-        setIsRecording(false);
-      };
-
-      recognitionRef.current = recognition;
-      recognition.start();
-      setRecordingError(null);
-      setIsRecording(true);
-    } catch {
-      setRecordingError("Unable to start recording. Please try again.");
-      setIsRecording(false);
-    }
-  };
-
-  const handleStopRecording = () => {
-    recognitionRef.current?.stop();
-    recognitionRef.current = null;
-    setIsRecording(false);
-  };
-
-  const handleToggleRecording = () => {
-    if (isRecording) {
-      handleStopRecording();
-    } else {
-      handleStartRecording();
-    }
-  };
-
-  const scoreMetrics = useMemo(() => {
-    if (!scoreResult) {
-      return [];
-    }
-    return [
-      { label: "Band Score", value: scoreResult.bandScore },
-      { label: "Pronunciation", value: scoreResult.pronunciationScore },
-      { label: "Grammar", value: scoreResult.grammarScore },
-      { label: "Vocabulary", value: scoreResult.vocabularyScore },
-      { label: "Fluency", value: scoreResult.fluencyScore },
+  const forecastItems = [
+    { label: t("speaking.forecastPart", { part: 1 }), value: 15, total: 203 },
+    { label: t("speaking.forecastPart", { part: 2 }), value: 0, total: 78 },
+    { label: t("speaking.forecastPart", { part: 3 }), value: 0, total: 234 },
     ];
-  }, [scoreResult]);
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col gap-2">
+      {/* Top title */}
+      <div className="flex flex-col gap-1">
         <p className="text-sm font-semibold uppercase tracking-wide text-brand-500">
-          Speaking Practice
+          {t("speaking.titleBadge")}
         </p>
-        <h1 className="text-3xl font-semibold text-gray-900 dark:text-white">
-          Real-time IELTS scoring & grammar feedback
+        <h1 className="text-2xl font-semibold text-gray-900">
+          {t("speaking.title")}
         </h1>
-        <p className="text-base text-gray-600 dark:text-gray-300">
-          Answer the question out loud, let the app transcribe your response, and
-          send it to the IELTS scoring API for instant feedback.
-        </p>
       </div>
 
-      <section className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-          <div className="mb-6 space-y-2">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Score a speaking response
-            </h2>
-            <p className="text-sm text-gray-500">
-              Calls `POST /api/score` from the Llama service.
+      {/* Top row: mission card + calendar / forecast */}
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1.3fr)]">
+        {/* Today mission + streak + error table */}
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                  {t("speaking.todayMission")}
+                </p>
+                <p className="mt-1 text-base text-gray-800">
+                  {t("speaking.todayMissionText", { count: 25 })}
+                </p>
+                <p className="mt-2 text-xs text-gray-500">
+                  {t("speaking.todayMissionHint")}
             </p>
           </div>
-          <form className="space-y-4" onSubmit={onScoreSubmit}>
-            <div>
-              <div className="mb-2 flex items-center justify-between gap-3">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
-                  Transcription
-                </label>
-                <button
-                  type="button"
-                  onClick={handleToggleRecording}
-                  className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium transition ${
-                    isRecording
-                      ? "border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 dark:border-rose-800 dark:bg-rose-950 dark:text-rose-200"
-                      : "border-brand-200 bg-brand-50 text-brand-700 hover:bg-brand-100 dark:border-brand-800 dark:bg-brand-950 dark:text-brand-200"
-                  }`}
-                >
-                  <span
-                    className={`h-2 w-2 rounded-full ${
-                      isRecording ? "bg-rose-500" : "bg-brand-500"
-                    }`}
-                  />
-                  {isRecording ? "Stop recording" : "Record answer"}
-                </button>
-              </div>
-              <textarea
-                className="min-h-[180px] w-full rounded-xl border border-gray-200 bg-gray-50/80 p-3 text-sm text-gray-900 outline-none transition focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-200 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-100"
-                value={scoreForm.transcription}
-                onChange={(event) =>
-                  setScoreForm((prev) => ({
-                    ...prev,
-                    transcription: event.target.value,
-                  }))
-                }
-                placeholder="Paste your transcribed answer or type manually…"
-              />
-              {recordingError && (
-                <p className="mt-2 text-xs text-rose-600 dark:text-rose-400">
-                  {recordingError}
-                </p>
-              )}
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200">
-                  Topic (optional)
-                </label>
-                <input
-                  type="text"
-                  value={scoreForm.topic}
-                  onChange={(event) =>
-                    setScoreForm((prev) => ({ ...prev, topic: event.target.value }))
-                  }
-                  placeholder="Education, Travel, Technology…"
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50/80 px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-200 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-100"
-                />
-              </div>
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200">
-                  Level
-                </label>
-                <div className="flex gap-2">
-                  <select
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50/80 px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-200 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-100"
-                    value={scoreForm.level}
-                    onChange={(event) =>
-                      setScoreForm((prev) => ({
-                        ...prev,
-                        level: event.target.value as SpeakingLevel,
-                      }))
-                    }
-                  >
-                    {speakingLevels.map((level) => (
-                      <option key={level.value} value={level.value}>
-                        {level.label}
-                      </option>
-                    ))}
-                  </select>
+              <div className="flex h-20 w-20 items-center justify-center rounded-full border-4 border-brand-100 bg-gray-50">
+                <div className="text-center">
+                  <p className="text-3xl font-semibold text-brand-600">0</p>
+                  <p className="text-[10px] font-medium text-gray-500">/25</p>
                 </div>
-                <p className="mt-1 text-xs text-gray-500">
-                  {speakingLevels.find((level) => level.value === scoreForm.level)
-                    ?.helper ?? ""}
+              </div>
+            </div>
+              </div>
+
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                  {t("speaking.streakTitle")}
                 </p>
+                <p className="mt-1 text-sm text-gray-700">
+                  {t("speaking.streakSubtitle")}
+                </p>
+                <p className="mt-1 text-xs text-gray-500">
+                  {t("speaking.streakDetail", { days: 0 })}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-semibold text-brand-600">0</p>
               </div>
             </div>
 
-            {scoreError && (
-              <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-                {scoreError}
-              </p>
-            )}
-
-            <button
-              type="submit"
-              className="w-full rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={scoreLoading}
-            >
-              {scoreLoading ? "Scoring…" : "Score response"}
+            {/* Error rate mini table */}
+            <div className="mt-5 border-t border-gray-100 pt-4">
+              <div className="mb-2 flex items-center text-xs font-medium text-gray-500">
+                <span className="w-6">#</span>
+                <span className="flex-1">
+                  {t("speaking.errorTableHeaderSound")}
+                </span>
+                <span className="w-16 text-right">
+                  {t("speaking.errorTableHeaderErrorRate")}
+                </span>
+                <span className="w-16" />
+              </div>
+              <div className="flex items-center rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-700">
+                <span className="w-6">1</span>
+                <button className="flex-1 text-brand-600 underline-offset-2 hover:underline">
+                  /dʒ/
+                </button>
+                <span className="w-16 text-right">43%</span>
+                <button className="ml-2 rounded-full bg-brand-50 px-3 py-1 text-[11px] font-medium text-brand-700 hover:bg-brand-100">
+                  {t("speaking.errorTableFix")}
             </button>
-          </form>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-          <div className="mb-6 space-y-2">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Scoring breakdown
-            </h2>
-            <p className="text-sm text-gray-500">
-              Displays the JSON payload returned by Llama.
-            </p>
+        {/* Calendar heatmap + forecast */}
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="mb-4 flex items-center justify-between text-xs text-gray-600">
+              <p>
+                {t("speaking.calendarMonths")}
+              </p>
+            </div>
+            {/* Placeholder calendar heatmap grid */}
+            <div className="grid grid-cols-14 gap-1">
+              {Array.from({ length: 70 }).map((_, index) => (
+                <span
+                  // eslint-disable-next-line react/no-array-index-key
+                  key={index}
+                  className="h-3 w-3 rounded-sm bg-gray-100"
+                />
+              ))}
+            </div>
           </div>
 
-          {scoreResult ? (
-            <div className="space-y-5">
-              <div className="grid gap-3 sm:grid-cols-2">
-                {scoreMetrics.map((metric) => (
-                  <div
-                    key={metric.label}
-                    className="rounded-xl border border-gray-100 bg-gray-50/70 p-4 dark:border-gray-800 dark:bg-gray-950"
-                  >
-                    <p className="text-sm text-gray-500">{metric.label}</p>
-                    <p className="text-3xl font-semibold text-gray-900 dark:text-white">
-                      {metric.value.toFixed(1)}
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="mb-4 flex items-center justify-between text-xs text-gray-600">
+              <p className="font-medium">{t("speaking.forecastTitle")}</p>
+              <p className="text-[11px] text-gray-400">
+                {t("speaking.forecastUpdated")}
+              </p>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              {forecastItems.map((item) => (
+                <div key={item.label}>
+                  <div className="mb-1 flex items-center justify-between">
+                    <p className="font-medium text-gray-700">{item.label}</p>
+                    <p className="text-[11px] text-gray-500">
+                      {item.value}/{item.total}
                     </p>
                   </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-gray-100">
+                    <div
+                      className="h-full rounded-full bg-brand-500"
+                      style={{
+                        width: `${(item.value / item.total) * 100}%`,
+                      }}
+                    />
+                  </div>
+                  </div>
                 ))}
-              </div>
-              <div className="rounded-xl border border-gray-100 bg-white p-4 text-sm text-gray-700 shadow-sm dark:border-gray-800 dark:bg-gray-950 dark:text-gray-100">
-                <p className="mb-1 text-xs font-semibold uppercase text-gray-500">
-                  Overall feedback
-                </p>
-                <p>{scoreResult.overallFeedback}</p>
-              </div>
             </div>
-          ) : (
-            <div className="rounded-xl border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500 dark:border-gray-800 dark:text-gray-400">
-              Run a scoring request to see the breakdown here.
-            </div>
-          )}
+          </div>
         </div>
+      </section>
+
+      {/* Bottom features row */}
+      <section className="grid gap-6 lg:grid-cols-2">
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                  {t("speaking.practiceBySentence")}
+                </p>
+                <p className="mt-1 text-sm text-gray-600">
+                  {t("speaking.practiceBySentenceDesc")}
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-3 text-sm">
+              <button className="rounded-full bg-brand-50 px-4 py-2 font-medium text-brand-700 hover:bg-brand-100">
+                PART 1 &gt;
+              </button>
+              <button className="rounded-full bg-brand-50 px-4 py-2 font-medium text-brand-700 hover:bg-brand-100">
+                PART 2 &gt;
+              </button>
+              <button className="rounded-full bg-brand-50 px-4 py-2 font-medium text-brand-700 hover:bg-brand-100">
+                PART 3 &gt;
+              </button>
+              <button className="rounded-full border border-dashed border-brand-300 px-4 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50">
+                {t("speaking.customSentence")}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                  {t("speaking.mockExamTitle")}
+                </p>
+                <p className="mt-1 text-sm text-gray-600">
+                  {t("speaking.mockExamDesc")}
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-3 text-sm">
+              <button className="rounded-full bg-pink-50 px-4 py-2 font-medium text-pink-700 hover:bg-pink-100">
+                PART 1 &gt;
+              </button>
+              <button className="rounded-full bg-pink-50 px-4 py-2 font-medium text-pink-700 hover:bg-pink-100">
+                PART 2 &gt;
+              </button>
+              <button className="rounded-full bg-pink-50 px-4 py-2 font-medium text-pink-700 hover:bg-pink-100">
+                PART 3 &gt;
+              </button>
+              <button className="rounded-full bg-pink-500 px-4 py-2 font-medium text-white hover:bg-pink-600">
+                {t("speaking.fullTest")} &gt;
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Bottom small cards */}
+      <section className="flex flex-wrap gap-4">
+        <button className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-800 shadow-sm hover:bg-gray-50">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-50 text-brand-600">
+            P
+          </span>
+          {t("speaking.pronunciationCourse")}
+        </button>
+        <button className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-800 shadow-sm hover:bg-gray-50">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-50 text-brand-600">
+            S
+          </span>
+          {t("speaking.vocabularyBook")}
+        </button>
       </section>
     </div>
   );

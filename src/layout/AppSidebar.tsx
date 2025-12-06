@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef, useState,useCallback } from "react";
+import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -19,6 +19,8 @@ import {
   UserCircleIcon,
 } from "../icons/index";
 import SidebarWidget from "./SidebarWidget";
+import { useAppSelector } from "@/store/hooks";
+import { useTranslation } from "react-i18next";
 
 type NavItem = {
   name: string;
@@ -27,90 +29,56 @@ type NavItem = {
   subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
 };
 
-const navItems: NavItem[] = [
+const baseNavItems: NavItem[] = [
   {
     icon: <GridIcon />,
-    name: "Dashboard",
-    subItems: [{ name: "Ecommerce", path: "/", pro: false }],
+    name: "sidebar.home",
+    path: "/",
   },
   {
-    icon: <PlugInIcon />,
-    name: "Speaking Coach",
-    path: "/speaking",
-  },
-  {
-    name: "Topics",
-    icon: <DocsIcon />,
-    subItems: [
-      { name: "Browse Topics", path: "/topics", pro: false },
-      { name: "Create Topic", path: "/topics/create", pro: false },
-    ],
-  },
-  {
-    icon: <CalenderIcon />,
-    name: "Calendar",
-    path: "/calendar",
-  },
-  {
-    icon: <UserCircleIcon />,
-    name: "User Profile",
-    path: "/profile",
-  },
-
-  {
-    name: "Forms",
     icon: <ListIcon />,
-    subItems: [{ name: "Form Elements", path: "/form-elements", pro: false }],
+    name: "sidebar.practiceByQuestions",
+    path: "/practice-by-questions",
   },
   {
-    name: "Tables",
-    icon: <TableIcon />,
-    subItems: [{ name: "Basic Tables", path: "/basic-tables", pro: false }],
-  },
-  {
-    name: "Pages",
-    icon: <PageIcon />,
-    subItems: [
-      { name: "Blank Page", path: "/blank", pro: false },
-      { name: "404 Error", path: "/error-404", pro: false },
-    ],
+    icon: <DocsIcon />,
+    name: "sidebar.exam",
+    path: "/topics",
   },
 ];
 
-const othersItems: NavItem[] = [
-  {
-    icon: <PieChartIcon />,
-    name: "Charts",
-    subItems: [
-      { name: "Line Chart", path: "/line-chart", pro: false },
-      { name: "Bar Chart", path: "/bar-chart", pro: false },
-    ],
-  },
-  {
-    icon: <BoxCubeIcon />,
-    name: "UI Elements",
-    subItems: [
-      { name: "Alerts", path: "/alerts", pro: false },
-      { name: "Avatar", path: "/avatars", pro: false },
-      { name: "Badge", path: "/badge", pro: false },
-      { name: "Buttons", path: "/buttons", pro: false },
-      { name: "Images", path: "/images", pro: false },
-      { name: "Videos", path: "/videos", pro: false },
-    ],
-  },
-  {
-    icon: <PlugInIcon />,
-    name: "Authentication",
-    subItems: [
-      { name: "Sign In", path: "/signin", pro: false },
-      { name: "Sign Up", path: "/signup", pro: false },
-    ],
-  },
-];
+const othersItems: NavItem[] = [];
 
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const pathname = usePathname();
+  const { user } = useAppSelector((state) => state.auth);
+  const { t } = useTranslation();
+
+  const navItems: NavItem[] = useMemo(() => {
+    const items: NavItem[] = [...baseNavItems];
+
+    if (user?.role === "Admin") {
+      items.push({
+        icon: <UserCircleIcon />,
+        name: "sidebar.userManagement",
+        path: "/profile",
+      });
+
+      // Admin: topics management (browse + create + manage)
+      items.push({
+        icon: <DocsIcon />,
+        name: "sidebar.topics",
+        subItems: [
+          { name: "sidebar.browseTopics", path: "/topics" },
+          { name: "sidebar.createTopic", path: "/topics/create" },
+          { name: "sidebar.manageTopics", path: "/topics/manage" },
+        ],
+      });
+    }
+
+    return items;
+  }, [user]);
 
   const renderMenuItems = (
     navItems: NavItem[],
@@ -142,7 +110,7 @@ const AppSidebar: React.FC = () => {
                 {nav.icon}
               </span>
               {(isExpanded || isHovered || isMobileOpen) && (
-                <span className={`menu-item-text`}>{nav.name}</span>
+                <span className={`menu-item-text`}>{t(nav.name)}</span>
               )}
               {(isExpanded || isHovered || isMobileOpen) && (
                 <ChevronDownIcon
@@ -173,7 +141,7 @@ const AppSidebar: React.FC = () => {
                   {nav.icon}
                 </span>
                 {(isExpanded || isHovered || isMobileOpen) && (
-                  <span className={`menu-item-text`}>{nav.name}</span>
+                  <span className={`menu-item-text`}>{t(nav.name)}</span>
                 )}
               </Link>
             )
@@ -202,7 +170,7 @@ const AppSidebar: React.FC = () => {
                           : "menu-dropdown-item-inactive"
                       }`}
                     >
-                      {subItem.name}
+                      {t(subItem.name)}
                       <span className="flex items-center gap-1 ml-auto">
                         {subItem.new && (
                           <span
@@ -362,7 +330,7 @@ const AppSidebar: React.FC = () => {
                 }`}
               >
                 {isExpanded || isHovered || isMobileOpen ? (
-                  "Menu"
+                  t("sidebar.menu", "Menu")
                 ) : (
                   <HorizontaLDots />
                 )}
@@ -370,6 +338,7 @@ const AppSidebar: React.FC = () => {
               {renderMenuItems(navItems, "main")}
             </div>
 
+            {othersItems.length > 0 && (
             <div className="">
               <h2
                 className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${
@@ -379,13 +348,14 @@ const AppSidebar: React.FC = () => {
                 }`}
               >
                 {isExpanded || isHovered || isMobileOpen ? (
-                  "Others"
+                      t("sidebar.others", "Others")
                 ) : (
                   <HorizontaLDots />
                 )}
               </h2>
               {renderMenuItems(othersItems, "others")}
             </div>
+            )}
           </div>
         </nav>
         {isExpanded || isHovered || isMobileOpen ? <SidebarWidget /> : null}

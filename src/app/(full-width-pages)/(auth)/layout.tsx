@@ -1,5 +1,6 @@
 import GridShape from "@/components/common/GridShape";
 import ThemeTogglerTwo from "@/components/common/ThemeTogglerTwo";
+import AuthBranding from "@/components/auth/AuthBranding";
 
 import { ThemeProvider } from "@/context/ThemeContext";
 import Image from "next/image";
@@ -29,9 +30,7 @@ export default function AuthLayout({
                     alt="Logo"
                   />
                 </Link>
-                <p className="text-center text-gray-400 dark:text-white/60">
-                  Free and Open-Source Tailwind CSS Admin Dashboard Template
-                </p>
+                <AuthBranding />
               </div>
             </div>
           </div>

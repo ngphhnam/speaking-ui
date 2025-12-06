@@ -1,13 +1,18 @@
 import type { Metadata } from "next";
-import CreateTopicQuestion from "@/components/topics/CreateTopicQuestion";
+import CreateTopic from "@/components/topics/CreateTopic";
+import RequireAdmin from "@/components/auth/RequireAdmin";
 
 export const metadata: Metadata = {
-  title: "Create Topic & Questions | Speaking Practice",
-  description: "Create new topics and questions for speaking practice",
+  title: "Create Topic | Speaking Practice",
+  description: "Create new topics for speaking practice",
 };
 
 const CreateTopicPage = () => {
-  return <CreateTopicQuestion />;
+  return (
+    <RequireAdmin>
+      <CreateTopic />
+    </RequireAdmin>
+  );
 };
 
 export default CreateTopicPage;

@@ -1,28 +1,22 @@
 "use client";
 
+"use client";
+
 import { AuthResponse } from "@/store/types";
 
-const AUTH_STORAGE_KEY = "speaking_auth_session";
+// NOTE: Tokens should be stored in secure cookies by the backend.
+// These helpers are now no-ops so we never write access/refresh tokens to localStorage.
 
-export const persistAuthSession = (payload: AuthResponse) => {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(payload));
+export const persistAuthSession = (_payload: AuthResponse) => {
+  // do not persist anything in localStorage
 };
 
 export const readAuthSession = (): AuthResponse | null => {
-  if (typeof window === "undefined") return null;
-  const raw = localStorage.getItem(AUTH_STORAGE_KEY);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as AuthResponse;
-  } catch {
-    localStorage.removeItem(AUTH_STORAGE_KEY);
-    return null;
-  }
+  // always return null so the app relies on cookies + /me
+  return null;
 };
 
 export const clearAuthSession = () => {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem(AUTH_STORAGE_KEY);
+  // nothing to clear
 };
 
