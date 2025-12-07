@@ -179,6 +179,7 @@ export default function TopicDetail({ topicId }: TopicDetailProps) {
           recordingId: string;
           analysisResultId: string;
           transcription: string;
+          correctedTranscription?: string;
           scores: {
             overallBandScore: number;
             fluencyScore: number;
@@ -188,6 +189,16 @@ export default function TopicDetail({ topicId }: TopicDetailProps) {
           };
           feedback: string;
           grammarReport?: string;
+          grammarCorrection?: {
+            original: string;
+            corrected: string;
+            corrections: Array<{
+              original: string;
+              corrected: string;
+              reason: string;
+            }>;
+            explanation: string;
+          };
           sampleAnswers?: string[] | null;
           keyVocabulary?: string[] | null;
         }
@@ -213,6 +224,7 @@ export default function TopicDetail({ topicId }: TopicDetailProps) {
   const silenceStartTimeRef = useRef<number | null>(null);
   const silenceCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [autoPausedReason, setAutoPausedReason] = useState<string | null>(null);
+  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   // Create speaking session when topic is loaded
   useEffect(() => {
@@ -258,18 +270,8 @@ export default function TopicDetail({ topicId }: TopicDetailProps) {
   const [generateVocabulary] = useGenerateVocabularyMutation();
   const [improveAnswer] = useImproveAnswerMutation();
 
-  const handleToggleQuestion = async (questionId: string) => {
-    const isCurrentlyExpanded = expandedQuestionId === questionId;
+  const handleToggleQuestion = (questionId: string) => {
     setExpandedQuestionId((current) => (current === questionId ? null : questionId));
-    
-    // Nếu đang mở rộng câu hỏi và chưa có câu trả lời mẫu, tự động generate
-    if (!isCurrentlyExpanded) {
-      const question = questionsArray.find((q) => q.id === questionId);
-      if (question && !generatedAnswerByQuestion[questionId]) {
-        // Tự động gọi API với band 7 và sample 1
-        await handleGenerateAnswer(questionId, question.questionText, 7.0, 1);
-      }
-    }
   };
 
   const handleGenerateOutline = async (questionId: string) => {
@@ -358,11 +360,11 @@ export default function TopicDetail({ topicId }: TopicDetailProps) {
       }));
       await handleGenerateVocabulary(questionId, question.questionText, modalTargetBand, modalVocabularyCount);
     } else {
-      await handleGenerateAnswer(questionId, question.questionText, modalTargetBand, 1);
+      await handleGenerateAnswer(questionId, question.questionText, modalTargetBand);
     }
   };
 
-  const handleGenerateAnswer = async (questionId: string, questionText: string, targetBand: number, sampleNumber?: number) => {
+  const handleGenerateAnswer = async (questionId: string, questionText: string, targetBand: number) => {
     const partNumber = topic?.partNumber ?? 2;
 
     try {
@@ -371,7 +373,6 @@ export default function TopicDetail({ topicId }: TopicDetailProps) {
         question: questionText,
         partNumber,
         targetBand,
-        sampleNumber,
       }).unwrap();
 
       setGeneratedAnswerByQuestion((prev) => ({
@@ -739,6 +740,72 @@ export default function TopicDetail({ topicId }: TopicDetailProps) {
       delete updated[questionId];
       return updated;
     });
+  };
+
+  const handleFileUpload = async (questionId: string, event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validAudioTypes = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/webm', 'audio/ogg', 'audio/m4a', 'audio/aac'];
+    if (!validAudioTypes.includes(file.type) && !file.name.match(/\.(mp3|wav|webm|ogg|m4a|aac)$/i)) {
+      setRecordingErrorByQuestion((prev) => ({
+        ...prev,
+        [questionId]: t("topics.invalidAudioFile", "Invalid audio file. Please upload MP3, WAV, WebM, OGG, M4A, or AAC file."),
+      }));
+      // Reset input
+      if (fileInputRefs.current[questionId]) {
+        fileInputRefs.current[questionId]!.value = '';
+      }
+      return;
+    }
+
+    try {
+      // Convert file to Blob
+      const audioBlob = new Blob([file], { type: file.type || 'audio/mpeg' });
+      
+      // Create object URL for audio playback
+      const audioUrl = URL.createObjectURL(audioBlob);
+      
+      // Store audio blob and URL
+      setAudioBlobByQuestion((prev) => ({
+        ...prev,
+        [questionId]: audioBlob,
+      }));
+      setAudioUrlByQuestion((prev) => {
+        // Clean up old URL if exists
+        if (prev[questionId]) {
+          URL.revokeObjectURL(prev[questionId]);
+        }
+        return {
+          ...prev,
+          [questionId]: audioUrl,
+        };
+      });
+      
+      // Clear any previous errors
+      setRecordingErrorByQuestion((prev) => ({
+        ...prev,
+        [questionId]: null,
+      }));
+
+      // Automatically submit for scoring
+      await handleScoreAnswer(questionId, audioBlob);
+    } catch (error) {
+      setRecordingErrorByQuestion((prev) => ({
+        ...prev,
+        [questionId]: t("topics.uploadError", "Failed to upload audio file. Please try again."),
+      }));
+    } finally {
+      // Reset input
+      if (fileInputRefs.current[questionId]) {
+        fileInputRefs.current[questionId]!.value = '';
+      }
+    }
+  };
+
+  const handleUploadClick = (questionId: string) => {
+    fileInputRefs.current[questionId]?.click();
   };
 
   // Cleanup audio URLs on unmount
@@ -1350,29 +1417,67 @@ export default function TopicDetail({ topicId }: TopicDetailProps) {
                               <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
                                 {t("topics.yourAnswer", "Your answer")}
                               </label>
-                              <button
-                                type="button"
-                                onClick={() => handleToggleRecording(question.id)}
-                                disabled={isScoring}
-                                className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
-                                  isRecording
-                                    ? "border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 dark:border-rose-800 dark:bg-rose-950 dark:text-rose-200"
-                                    : isScoring
-                                    ? "border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed dark:border-gray-800 dark:bg-gray-900 dark:text-gray-600"
-                                    : "border-brand-200 bg-brand-50 text-brand-700 hover:bg-brand-100 dark:border-brand-800 dark:bg-brand-950 dark:text-brand-200"
-                                }`}
-                              >
-                                <span
-                                  className={`h-1.5 w-1.5 rounded-full ${
-                                    isRecording ? "bg-rose-500" : isScoring ? "bg-gray-400" : "bg-brand-500"
-                                  }`}
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="file"
+                                  ref={(el) => {
+                                    fileInputRefs.current[question.id] = el;
+                                  }}
+                                  accept="audio/*,.mp3,.wav,.webm,.ogg,.m4a,.aac"
+                                  onChange={(e) => handleFileUpload(question.id, e)}
+                                  className="hidden"
+                                  disabled={isScoring}
                                 />
-                                {isRecording 
-                                  ? t("topics.stopRecording", "Stop recording") 
-                                  : isScoring
-                                  ? t("topics.scoringInProgress", "Scoring...")
-                                  : t("topics.recordAnswer", "Record answer")}
-                              </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleUploadClick(question.id)}
+                                  disabled={isScoring}
+                                  className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
+                                    isScoring
+                                      ? "border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed dark:border-gray-800 dark:bg-gray-900 dark:text-gray-600"
+                                      : "border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-200"
+                                  }`}
+                                >
+                                  <svg
+                                    className="h-3 w-3"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                                    />
+                                  </svg>
+                                  {t("topics.uploadAudio", "Upload audio")}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleRecording(question.id)}
+                                  disabled={isScoring}
+                                  className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
+                                    isRecording
+                                      ? "border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 dark:border-rose-800 dark:bg-rose-950 dark:text-rose-200"
+                                      : isScoring
+                                      ? "border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed dark:border-gray-800 dark:bg-gray-900 dark:text-gray-600"
+                                      : "border-brand-200 bg-brand-50 text-brand-700 hover:bg-brand-100 dark:border-brand-800 dark:bg-brand-950 dark:text-brand-200"
+                                  }`}
+                                >
+                                  <span
+                                    className={`h-1.5 w-1.5 rounded-full ${
+                                      isRecording ? "bg-rose-500" : isScoring ? "bg-gray-400" : "bg-brand-500"
+                                    }`}
+                                  />
+                                  {isRecording 
+                                    ? t("topics.stopRecording", "Stop recording") 
+                                    : isScoring
+                                    ? t("topics.scoringInProgress", "Scoring...")
+                                    : t("topics.recordAnswer", "Record answer")}
+                                </button>
+                              </div>
                             </div>
                             {audioBlob && !isRecording && !isScoring && (
                               <div className="rounded-lg border border-brand-200 bg-brand-50 p-3 text-xs dark:border-brand-800 dark:bg-brand-900/30">
@@ -1425,59 +1530,61 @@ export default function TopicDetail({ topicId }: TopicDetailProps) {
                           </div>
 
                           {scoreResult && (
-                            <div className="space-y-3">
+                            <div className="space-y-4">
                               {/* Band Score */}
-                              <div className="flex flex-wrap items-center justify-between gap-2">
-                                <span className="text-[11px] font-medium text-gray-700 dark:text-gray-300">
-                                  {t("topics.bandScore", "Band score")}:{" "}
-                                  <span className="font-semibold">
+                              <div className="rounded-xl border-2 border-brand-200 bg-gradient-to-br from-brand-50 to-brand-100/50 p-6 dark:border-brand-800 dark:from-brand-900/40 dark:to-brand-900/20">
+                                <div className="flex flex-col items-center justify-center gap-2">
+                                  <p className="text-sm font-semibold uppercase tracking-wide text-brand-700 dark:text-brand-300">
+                                    {t("topics.bandScore", "Band score")}
+                                  </p>
+                                  <div className="text-5xl font-bold text-brand-600 dark:text-brand-400">
                                     {scoreResult.scores.overallBandScore.toFixed(1)}
-                                  </span>
-                                </span>
+                                  </div>
+                                </div>
                               </div>
 
                               {/* Detailed Scores */}
-                              <div className="grid grid-cols-2 gap-2 rounded-lg border border-gray-200 bg-gray-50 p-3 text-[11px] dark:border-gray-700 dark:bg-gray-900/60">
-                                <div>
-                                  <span className="text-gray-500 dark:text-gray-400">{t("topics.pronunciationScore", "Pronunciation")}: </span>
-                                  <span className="font-medium text-gray-900 dark:text-white">
+                              <div className="grid grid-cols-2 gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                                <div className="flex flex-col gap-1 rounded-lg bg-gray-50 p-3 dark:bg-gray-900/50">
+                                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{t("topics.pronunciationScore", "Pronunciation")}</span>
+                                  <span className="text-2xl font-bold text-gray-900 dark:text-white">
                                     {scoreResult.scores.pronunciationScore.toFixed(1)}
                                   </span>
                                 </div>
-                                <div>
-                                  <span className="text-gray-500 dark:text-gray-400">{t("topics.grammarScore", "Grammar")}: </span>
-                                  <span className="font-medium text-gray-900 dark:text-white">
+                                <div className="flex flex-col gap-1 rounded-lg bg-gray-50 p-3 dark:bg-gray-900/50">
+                                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{t("topics.grammarScore", "Grammar")}</span>
+                                  <span className="text-2xl font-bold text-gray-900 dark:text-white">
                                     {scoreResult.scores.grammarScore.toFixed(1)}
                                   </span>
                                 </div>
-                                <div>
-                                  <span className="text-gray-500 dark:text-gray-400">{t("topics.vocabularyScore", "Vocabulary")}: </span>
-                                  <span className="font-medium text-gray-900 dark:text-white">
+                                <div className="flex flex-col gap-1 rounded-lg bg-gray-50 p-3 dark:bg-gray-900/50">
+                                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{t("topics.vocabularyScore", "Vocabulary")}</span>
+                                  <span className="text-2xl font-bold text-gray-900 dark:text-white">
                                     {scoreResult.scores.vocabularyScore.toFixed(1)}
                                   </span>
                                 </div>
-                                <div>
-                                  <span className="text-gray-500 dark:text-gray-400">{t("topics.fluencyScore", "Fluency")}: </span>
-                                  <span className="font-medium text-gray-900 dark:text-white">
+                                <div className="flex flex-col gap-1 rounded-lg bg-gray-50 p-3 dark:bg-gray-900/50">
+                                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{t("topics.fluencyScore", "Fluency")}</span>
+                                  <span className="text-2xl font-bold text-gray-900 dark:text-white">
                                     {scoreResult.scores.fluencyScore.toFixed(1)}
                                   </span>
                                 </div>
                               </div>
 
                               {/* Student Answer Section */}
-                              <div className="space-y-3">
-                                <div className="rounded-lg border border-purple-200 bg-purple-50 p-3 text-[11px] dark:border-purple-800 dark:bg-purple-900/30">
-                                  <p className="mb-2 font-semibold text-purple-800 dark:text-purple-200">
+                              <div className="space-y-4">
+                                <div className="rounded-xl border border-purple-200 bg-gradient-to-br from-purple-50 to-purple-100/50 p-5 dark:border-purple-800 dark:from-purple-900/40 dark:to-purple-900/20">
+                                  <p className="mb-4 text-base font-bold text-purple-800 dark:text-purple-200">
                                     {t("topics.studentAnswer", "Student Answer")}
                                   </p>
                                   
                                   {/* Audio Player */}
                                   {audioUrl && (
-                                    <div className="mb-3">
+                                    <div className="mb-4">
                                       <audio
                                         controls
                                         src={audioUrl}
-                                        className="w-full h-10"
+                                        className="w-full h-12"
                                         preload="metadata"
                                       >
                                         {t("topics.audioNotSupported", "Your browser does not support the audio element.")}
@@ -1487,49 +1594,207 @@ export default function TopicDetail({ topicId }: TopicDetailProps) {
 
                                   {/* Transcription */}
                                   {scoreResult.transcription && (
-                                    <div className="mt-2">
-                                      <div className="mb-2 flex items-center justify-between">
-                                        <p className="text-xs font-medium text-purple-700 dark:text-purple-300">
+                                    <div className="mt-4 space-y-4">
+                                      <div className="flex items-center justify-between">
+                                        <p className="text-sm font-semibold text-purple-700 dark:text-purple-300">
                                           {t("topics.transcription", "Transcription")}:
                                         </p>
                                         {!improvedAnswerByQuestion[question.id] && (
                                           <Button
                                             type="button"
-                                            variant="outline"
+                                            variant="primary"
                                             size="sm"
                                             disabled={isImprovingByQuestion[question.id]}
                                             onClick={() => handleImproveAnswer(question.id, scoreResult.transcription, question.questionText)}
-                                            className="text-[10px] px-2 py-1"
+                                            className="bg-brand-600 hover:bg-brand-700 text-white font-medium px-4 py-2 text-sm shadow-sm"
                                           >
-                                            {isImprovingByQuestion[question.id]
-                                              ? t("topics.improving", "Improving...")
-                                              : t("topics.improveAnswer", "Improve Answer")}
+                                            {isImprovingByQuestion[question.id] ? (
+                                              <span className="flex items-center gap-2">
+                                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                                                {t("topics.improving", "Improving...")}
+                                              </span>
+                                            ) : (
+                                              <span className="flex items-center gap-2">
+                                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                                </svg>
+                                                {t("topics.improveAnswer", "Improve Answer")}
+                                              </span>
+                                            )}
                                           </Button>
                                         )}
                                       </div>
-                                      <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                                        {scoreResult.transcription}
-                                      </p>
+                                      <div className="rounded-lg border border-purple-200 bg-white p-4 dark:border-purple-800 dark:bg-gray-900">
+                                        <p className="text-sm leading-relaxed text-gray-800 dark:text-gray-200">
+                                          {scoreResult.transcription}
+                                        </p>
+                                      </div>
+                                      
+                                      {/* Corrected Transcription */}
+                                      {scoreResult.correctedTranscription && (
+                                        <div className="mt-4">
+                                          <p className="mb-2 text-sm font-semibold text-green-700 dark:text-green-300">
+                                            {t("topics.correctedTranscription", "Corrected Transcription")}:
+                                          </p>
+                                          <div className="rounded-lg border-2 border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-900/20">
+                                            <p className="text-sm leading-relaxed text-gray-800 dark:text-gray-200">
+                                              {scoreResult.correctedTranscription}
+                                            </p>
+                                          </div>
+                                        </div>
+                                      )}
+                                      
+                                      {/* Improved Answer */}
+                                      {improvedAnswerByQuestion[question.id] && showImprovedAnswerByQuestion[question.id] && (
+                                        <div className="mt-4 rounded-xl border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 to-emerald-100/50 p-5 dark:border-emerald-800 dark:from-emerald-900/40 dark:to-emerald-900/20">
+                                          <div className="mb-3 flex items-center justify-between">
+                                            <p className="text-base font-bold text-emerald-800 dark:text-emerald-200">
+                                              {t("topics.improvedAnswer", "Improved Answer")}
+                                            </p>
+                                            <button
+                                              type="button"
+                                              onClick={() => setShowImprovedAnswerByQuestion((prev) => ({
+                                                ...prev,
+                                                [question.id]: !prev[question.id],
+                                              }))}
+                                              className="text-emerald-700 hover:text-emerald-900 dark:text-emerald-300 dark:hover:text-emerald-100"
+                                            >
+                                              {showImprovedAnswerByQuestion[question.id] ? (
+                                                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                                                </svg>
+                                              ) : (
+                                                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                              )}
+                                            </button>
+                                          </div>
+                                          {showImprovedAnswerByQuestion[question.id] && (
+                                            <div className="space-y-3">
+                                              <div className="rounded-lg border border-emerald-200 bg-white p-4 dark:border-emerald-800 dark:bg-gray-900">
+                                                <p className="text-sm leading-relaxed text-gray-800 dark:text-gray-200">
+                                                  {improvedAnswerByQuestion[question.id].improved}
+                                                </p>
+                                              </div>
+                                              {improvedAnswerByQuestion[question.id].explanation && (
+                                                <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3 dark:border-emerald-800 dark:bg-emerald-900/20">
+                                                  <p className="text-xs font-semibold text-emerald-800 dark:text-emerald-200 mb-1">
+                                                    {t("topics.improvementExplanation", "Improvement Explanation")}:
+                                                  </p>
+                                                  <p className="text-xs leading-relaxed text-emerald-700 dark:text-emerald-300">
+                                                    {improvedAnswerByQuestion[question.id].explanation}
+                                                  </p>
+                                                </div>
+                                              )}
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
                                     </div>
                                   )}
                                 </div>
                               </div>
 
+                              {/* Grammar Correction */}
+                              {scoreResult.grammarCorrection && (
+                                <div className="rounded-xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100/50 p-5 dark:border-blue-800 dark:from-blue-900/40 dark:to-blue-900/20">
+                                  <p className="mb-3 text-base font-bold text-blue-800 dark:text-blue-200">
+                                    {t("topics.grammarCorrection", "Grammar Correction")}
+                                  </p>
+                                  
+                                  {/* Original vs Corrected Comparison */}
+                                  <div className="mb-4 grid gap-4 md:grid-cols-2">
+                                    <div className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20">
+                                      <p className="mb-2 text-xs font-semibold text-red-700 dark:text-red-300">
+                                        {t("topics.original", "Original")}:
+                                      </p>
+                                      <p className="text-sm leading-relaxed text-gray-800 dark:text-gray-200">
+                                        {scoreResult.grammarCorrection.original}
+                                      </p>
+                                    </div>
+                                    <div className="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-900/20">
+                                      <p className="mb-2 text-xs font-semibold text-green-700 dark:text-green-300">
+                                        {t("topics.corrected", "Corrected")}:
+                                      </p>
+                                      <p className="text-sm leading-relaxed text-gray-800 dark:text-gray-200">
+                                        {scoreResult.grammarCorrection.corrected}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  {/* Detailed Corrections */}
+                                  {scoreResult.grammarCorrection.corrections && scoreResult.grammarCorrection.corrections.length > 0 && (
+                                    <div className="mb-4">
+                                      <p className="mb-3 text-sm font-semibold text-blue-700 dark:text-blue-300">
+                                        {t("topics.detailedCorrections", "Detailed Corrections")}:
+                                      </p>
+                                      <div className="space-y-2">
+                                        {scoreResult.grammarCorrection.corrections.map((correction, index) => (
+                                          <div
+                                            key={index}
+                                            className="rounded-lg border border-blue-200 bg-white p-3 dark:border-blue-800 dark:bg-gray-900"
+                                          >
+                                            <div className="mb-2 flex items-start gap-2">
+                                              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+                                                {index + 1}
+                                              </span>
+                                              <div className="flex-1">
+                                                <div className="mb-1 flex items-center gap-2">
+                                                  <span className="text-xs font-medium text-red-600 dark:text-red-400 line-through">
+                                                    {correction.original}
+                                                  </span>
+                                                  <svg className="h-3 w-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                                  </svg>
+                                                  <span className="text-xs font-medium text-green-600 dark:text-green-400">
+                                                    {correction.corrected}
+                                                  </span>
+                                                </div>
+                                                <p className="text-xs text-gray-600 dark:text-gray-400">
+                                                  {correction.reason}
+                                                </p>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Explanation */}
+                                  {scoreResult.grammarCorrection.explanation && (
+                                    <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
+                                      <p className="mb-2 text-xs font-semibold text-blue-800 dark:text-blue-200">
+                                        {t("topics.explanation", "Explanation")}:
+                                      </p>
+                                      <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">
+                                        {scoreResult.grammarCorrection.explanation}
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
                               {/* Grammar Report */}
                               {scoreResult.grammarReport && (
-                                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-[11px] dark:border-amber-800 dark:bg-amber-900/30">
-                                  <p className="mb-1 font-semibold text-amber-800 dark:text-amber-200">
+                                <div className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-amber-100/50 p-5 dark:border-amber-800 dark:from-amber-900/40 dark:to-amber-900/20">
+                                  <p className="mb-3 text-base font-bold text-amber-800 dark:text-amber-200">
                                     {t("topics.grammarReport", "Grammar Report")}
                                   </p>
-                                  <p className="text-gray-700 dark:text-gray-300">{scoreResult.grammarReport}</p>
+                                  <div className="rounded-lg border border-amber-200 bg-white p-4 dark:border-amber-800 dark:bg-gray-900">
+                                    <p className="text-sm leading-relaxed text-gray-800 dark:text-gray-200">{scoreResult.grammarReport}</p>
+                                  </div>
                                 </div>
                               )}
 
                               {/* Feedback */}
                               {scoreResult.feedback && (
-                                <div className="rounded-lg border border-gray-200 bg-gray-100 p-3 text-[11px] text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
-                                  <p className="mb-1 font-semibold">{t("topics.feedback", "Feedback")}</p>
-                                  <p>{scoreResult.feedback}</p>
+                                <div className="rounded-xl border-2 border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100/50 p-5 dark:border-gray-700 dark:from-gray-900/60 dark:to-gray-900/40">
+                                  <p className="mb-3 text-base font-bold text-gray-900 dark:text-white">{t("topics.feedback", "Feedback")}</p>
+                                  <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
+                                    <p className="text-sm leading-relaxed text-gray-800 dark:text-gray-200">{scoreResult.feedback}</p>
+                                  </div>
                                 </div>
                               )}
                             </div>
@@ -1573,16 +1838,6 @@ export default function TopicDetail({ topicId }: TopicDetailProps) {
                   </dt>
                   <dd className="font-medium text-gray-900 dark:text-white">
                     {aggregatedStats.avgScore.toFixed(1)}
-                  </dd>
-                </div>
-              )}
-              {aggregatedStats.avgTimeLimit !== null && (
-                <div className="flex items-center justify-between">
-                  <dt className="text-gray-500 dark:text-gray-400">
-                    {t("topics.avgTimeLimit", "Avg. time limit")}
-                  </dt>
-                  <dd className="font-medium text-gray-900 dark:text-white">
-                    {aggregatedStats.avgTimeLimit}s
                   </dd>
                 </div>
               )}
