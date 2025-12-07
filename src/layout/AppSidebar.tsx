@@ -65,14 +65,13 @@ const AppSidebar: React.FC = () => {
         path: "/profile",
       });
 
-      // Admin: topics management (browse + create + manage)
+      // Admin: topics management (browse + create)
       items.push({
         icon: <DocsIcon />,
         name: "sidebar.topics",
         subItems: [
           { name: "sidebar.browseTopics", path: "/topics" },
           { name: "sidebar.createTopic", path: "/topics/create" },
-          { name: "sidebar.manageTopics", path: "/topics/manage" },
         ],
       });
     }

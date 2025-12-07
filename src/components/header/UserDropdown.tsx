@@ -5,28 +5,15 @@ import React, { useState } from "react";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { useAppSelector } from "@/store/hooks";
-import { useMeQuery } from "@/store/api/authApi";
 
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const { user } = useAppSelector((state) => state.auth);
   
-  // Gọi API /me nếu chưa có user trong store
-  const { data: me } = useMeQuery(undefined, {
-    skip: !!user,
-  });
-  
-  // Sử dụng user từ store hoặc từ API
-  const currentUser = user ?? me;
-  
-  // Lấy tên ngắn gọn (first name) hoặc email
-  const displayName = currentUser?.fullName 
-    ? currentUser.fullName.split(" ")[0] 
-    : currentUser?.email?.split("@")[0] || "User";
-  
-  // Lấy full name hoặc email
-  const fullName = currentUser?.fullName || currentUser?.email || "User";
-  const email = currentUser?.email || "No email";
+  // Get first name from fullName for display
+  const displayName = user?.fullName ? user.fullName.split(" ")[0] : "User";
+  const fullName = user?.fullName || "User";
+  const email = user?.email || "";
 
 function toggleDropdown(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
   e.stopPropagation();
@@ -82,9 +69,11 @@ function toggleDropdown(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
           <span className="block font-medium text-gray-700 text-theme-sm dark:text-gray-400">
             {fullName}
           </span>
-          <span className="mt-0.5 block text-theme-xs text-gray-500 dark:text-gray-400">
-            {email}
-          </span>
+          {email && (
+            <span className="mt-0.5 block text-theme-xs text-gray-500 dark:text-gray-400">
+              {email}
+            </span>
+          )}
         </div>
 
         <ul className="flex flex-col gap-1 pt-4 pb-3 border-b border-gray-200 dark:border-gray-800">

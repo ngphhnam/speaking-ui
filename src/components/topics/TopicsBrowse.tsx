@@ -1,11 +1,14 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { useGetTopicsQuery, useGetPopularTopicsQuery } from "@/store/api/topicApi";
+import { useGetTopicsQuery, useGetPopularTopicsQuery, useDeleteTopicMutation } from "@/store/api/topicApi";
 import Link from "next/link";
 import Button from "@/components/ui/button/Button";
 import { useTranslation } from "react-i18next";
 import { useAppSelector } from "@/store/hooks";
+import { Dropdown } from "@/components/ui/dropdown/Dropdown";
+import { DropdownItem } from "@/components/ui/dropdown/DropdownItem";
+import { Modal } from "@/components/ui/modal";
 
 const difficultyColors: Record<string, string> = {
   beginner: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
@@ -24,9 +27,12 @@ export default function TopicsBrowse() {
   const [filter, setFilter] = useState<"all" | "popular">("all");
   const [partFilter, setPartFilter] = useState<number | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string>("");
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ topicId: string; topicTitle: string } | null>(null);
   const { t } = useTranslation();
   const { user } = useAppSelector((state) => state.auth);
   const isAdmin = user?.role === "Admin";
+  const [deleteTopic, { isLoading: isDeleting }] = useDeleteTopicMutation();
 
   useEffect(() => {
     setMounted(true);
@@ -68,6 +74,22 @@ export default function TopicsBrowse() {
     });
     return Array.from(partsSet).sort();
   }, [allTopics]);
+
+  const handleDeleteTopic = async () => {
+    if (!deleteConfirm) return;
+    
+    try {
+      await deleteTopic(deleteConfirm.topicId).unwrap();
+      setDeleteConfirm(null);
+      setOpenDropdownId(null);
+    } catch (error) {
+      console.error("Failed to delete topic:", error);
+    }
+  };
+
+  const toggleDropdown = (topicId: string) => {
+    setOpenDropdownId((prev) => (prev === topicId ? null : topicId));
+  };
 
   if (!mounted) {
     return (
@@ -230,14 +252,95 @@ export default function TopicsBrowse() {
             >
               <Link href={`/topics/${topic.id}`} className="block">
               <div className="flex items-start justify-between gap-3 mb-3">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400 flex-1">
                   {topic.title}
                 </h3>
-                {topic.partNumber && (
-                  <span className="rounded-full bg-brand-100 px-3 py-1 text-xs font-medium text-brand-700 dark:bg-brand-900/30 dark:text-brand-400 whitespace-nowrap">
-                    Part {topic.partNumber}
-                  </span>
-                )}
+                <div className="flex items-center gap-2">
+                  {topic.partNumber && (
+                    <span className="rounded-full bg-brand-100 px-3 py-1 text-xs font-medium text-brand-700 dark:bg-brand-900/30 dark:text-brand-400 whitespace-nowrap">
+                      Part {topic.partNumber}
+                    </span>
+                  )}
+                  {isAdmin && (
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          toggleDropdown(topic.id);
+                        }}
+                        className="dropdown-toggle p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                        aria-label="Topic options"
+                      >
+                        <svg
+                          className="h-5 w-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
+                          />
+                        </svg>
+                      </button>
+                      <Dropdown
+                        isOpen={openDropdownId === topic.id}
+                        onClose={() => setOpenDropdownId(null)}
+                        className="w-48"
+                      >
+                        <ul className="py-1">
+                          <li>
+                            <DropdownItem
+                              tag="a"
+                              href={`/topics/${topic.id}/edit`}
+                              onItemClick={() => setOpenDropdownId(null)}
+                              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5"
+                            >
+                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                              {t("topics.edit", "Edit")}
+                            </DropdownItem>
+                          </li>
+                          <li>
+                            <DropdownItem
+                              tag="a"
+                              href={`/topics/${topic.id}/questions`}
+                              onItemClick={() => setOpenDropdownId(null)}
+                              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5"
+                            >
+                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                              {t("topics.manageQuestions", "Manage Questions")}
+                            </DropdownItem>
+                          </li>
+                          <li>
+                            <DropdownItem
+                              tag="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setDeleteConfirm({ topicId: topic.id, topicTitle: topic.title });
+                                setOpenDropdownId(null);
+                              }}
+                              className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                            >
+                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                              {t("topics.delete", "Delete")}
+                            </DropdownItem>
+                          </li>
+                        </ul>
+                      </Dropdown>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {topic.description && (
@@ -266,8 +369,8 @@ export default function TopicsBrowse() {
 
               <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                 <span>
-                  {topic.questions?.length ?? 0} question
-                  {(topic.questions?.length ?? 0) !== 1 ? "s" : ""}
+                  {topic.totalQuestion ?? topic.questions?.length ?? 0} question
+                  {(topic.totalQuestion ?? topic.questions?.length ?? 0) !== 1 ? "s" : ""}
                 </span>
                 {topic.avgUserRating && (
                   <span className="flex items-center gap-1">
@@ -290,6 +393,41 @@ export default function TopicsBrowse() {
           ))}
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={deleteConfirm !== null}
+        onClose={() => setDeleteConfirm(null)}
+        className="max-w-md p-6"
+      >
+        <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+          {t("topics.deleteTopic", "Delete Topic")}
+        </h3>
+        <p className="mb-6 text-sm text-gray-600 dark:text-gray-400">
+          {t("topics.deleteTopicConfirm", "Are you sure you want to delete")} <span className="font-semibold text-gray-900 dark:text-white">"{deleteConfirm?.topicTitle}"</span>? {t("topics.deleteTopicWarning", "This action cannot be undone.")}
+        </p>
+        <div className="flex items-center justify-end gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setDeleteConfirm(null)}
+            disabled={isDeleting}
+          >
+            {t("common.cancel", "Cancel")}
+          </Button>
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
+            onClick={handleDeleteTopic}
+            disabled={isDeleting}
+            className="bg-red-600 hover:bg-red-700 text-white"
+          >
+            {isDeleting ? t("topics.deleting", "Deleting...") : t("topics.delete", "Delete")}
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

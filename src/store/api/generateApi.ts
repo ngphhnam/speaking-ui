@@ -24,7 +24,6 @@ export type GenerateAnswerRequest = {
   question: string;
   partNumber: number;
   targetBand: number;
-  sampleNumber?: number;
 };
 
 export type GenerateAnswerResponse = {

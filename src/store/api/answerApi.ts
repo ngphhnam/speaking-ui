@@ -4,10 +4,22 @@ import type { RootState } from "@/store/store";
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000";
 
+export type GrammarCorrection = {
+  original: string;
+  corrected: string;
+  corrections: Array<{
+    original: string;
+    corrected: string;
+    reason: string;
+  }>;
+  explanation: string;
+};
+
 export type SubmitAnswerResponse = {
   recordingId: string;
   analysisResultId: string;
   transcription: string;
+  correctedTranscription?: string;
   scores: {
     overallBandScore: number;
     fluencyScore: number;
@@ -17,6 +29,7 @@ export type SubmitAnswerResponse = {
   };
   feedback: string;
   grammarReport?: string;
+  grammarCorrection?: GrammarCorrection;
   sampleAnswers?: string[] | null;
   keyVocabulary?: string[] | null;
 };

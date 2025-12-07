@@ -13,6 +13,7 @@ export type TopicDto = {
   createdAt: string;
   updatedAt: string;
   questions?: QuestionDto[];
+  totalQuestion?: number;
 };
 
 export type CreateTopicRequest = {
