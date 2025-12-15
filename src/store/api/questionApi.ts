@@ -27,10 +27,16 @@ export const questionApi = createApi({
   }),
   tagTypes: ["Question"],
   endpoints: (builder) => ({
-    getQuestions: builder.query<QuestionDto[], { topicId?: string; includeInactive?: boolean }>({
+    getQuestions: builder.query<
+      QuestionDto[],
+      { topicId?: string; includeInactive?: boolean; partNumber?: number }
+    >({
       query: (params) => {
         const searchParams = new URLSearchParams();
         if (params.topicId) searchParams.append("topicId", params.topicId);
+        if (typeof params.partNumber === "number") {
+          searchParams.append("partNumber", params.partNumber.toString());
+        }
         if (params.includeInactive) searchParams.append("includeInactive", "true");
         return `/api/questions?${searchParams.toString()}`;
       },
@@ -62,6 +68,33 @@ export const questionApi = createApi({
     getRandomQuestionByTopic: builder.query<QuestionDto, string>({
       query: (topicId) => `/api/questions/topic/${topicId}/random`,
       providesTags: ["Question"],
+    }),
+    getPopularQuestions: builder.query<QuestionDto[], number | void>({
+      query: (limit = 10) => `/api/questions/popular?limit=${limit}`,
+      transformResponse: (response: ApiResponse<QuestionDto[]>) => response.data ?? [],
+      providesTags: ["Question"],
+    }),
+    getRecommendedQuestions: builder.query<QuestionDto[], void>({
+      query: () => "/api/questions/recommended",
+      transformResponse: (response: ApiResponse<QuestionDto[]>) => response.data ?? [],
+      providesTags: ["Question"],
+    }),
+    generateQuestions: builder.mutation<
+      QuestionDto[],
+      { topic: string; count: number; partNumber: number }
+    >({
+      query: (body) => ({
+        url: "/api/questions/generate",
+        method: "POST",
+        body,
+      }),
+      transformResponse: (response: ApiResponse<QuestionDto[]>) => response.data ?? [],
+      invalidatesTags: ["Question"],
+    }),
+    getQuestionStatistics: builder.query<any, string>({
+      query: (questionId) => `/api/questions/${questionId}/statistics`,
+      transformResponse: (response: ApiResponse<any>) => response.data,
+      providesTags: (result, error, questionId) => [{ type: "Question", id: questionId }],
     }),
     createQuestion: builder.mutation<QuestionDto, CreateQuestionRequest>({
       query: (body) => ({
@@ -95,6 +128,10 @@ export const {
   useGetQuestionByIdQuery,
   useGenerateOutlineForQuestionMutation,
   useGetRandomQuestionByTopicQuery,
+  useGetPopularQuestionsQuery,
+  useGetRecommendedQuestionsQuery,
+  useGenerateQuestionsMutation,
+  useGetQuestionStatisticsQuery,
   useCreateQuestionMutation,
   useUpdateQuestionMutation,
   useDeleteQuestionMutation,

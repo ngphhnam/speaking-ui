@@ -245,12 +245,22 @@ export default function TopicsBrowse() {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {topics.map((topic) => (
-            <div
-              key={topic.id}
-              className="group rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition hover:border-brand-500 hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:border-brand-500"
-            >
-              <Link href={`/topics/${topic.id}`} className="block">
+          {topics.map((topic) => {
+            const detailHref =
+              topic.partNumber === 1
+                ? `/topics/${topic.id}`
+                : topic.partNumber === 2
+                ? `/topics/${topic.id}/part2`
+                : topic.partNumber === 3
+                ? `/topics/${topic.id}/part3`
+                : `/topics/${topic.id}`;
+
+            return (
+              <div
+                key={topic.id}
+                className="group rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition hover:border-brand-500 hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:border-brand-500"
+              >
+              <Link href={detailHref} className="block">
               <div className="flex items-start justify-between gap-3 mb-3">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400 flex-1">
                   {topic.title}
@@ -380,8 +390,49 @@ export default function TopicsBrowse() {
                 )}
               </div>
             </Link>
+
+              {/* Practice buttons for Part 2 & 3 topics */}
+              {topic.partNumber === 2 ? (
+                <div className="mt-4 flex gap-2">
+                  <Link
+                    href={`/topics/${topic.id}/part2`}
+                    className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-xs font-medium text-brand-700 transition hover:border-brand-500 hover:bg-brand-100 dark:border-brand-700 dark:bg-brand-900/30 dark:text-brand-300 dark:hover:border-brand-500"
+                  >
+                    {t("topics.practicePart2", "Luyện Part 2")}
+                  </Link>
+                  <Link
+                    href={`/topics/${topic.id}/part3`}
+                    className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-purple-200 bg-purple-50 px-3 py-2 text-xs font-medium text-purple-700 transition hover:border-purple-500 hover:bg-purple-100 dark:border-purple-700 dark:bg-purple-900/30 dark:text-purple-300 dark:hover:border-purple-500"
+                  >
+                    {t("topics.practicePart3", "Luyện Part 3")}
+                  </Link>
+                </div>
+              ) : (
+                <div className="mt-4 flex">
+                  <Link
+                    href={`/topics/${topic.id}`}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-medium text-gray-700 transition hover:border-brand-500 hover:bg-brand-50 hover:text-brand-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-brand-500 dark:hover:bg-gray-900 dark:hover:text-brand-400"
+                  >
+                    {t("topics.practiceTopic")}
+                    <svg
+                      className="h-3 w-3"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </Link>
+                </div>
+              )}
+
               {isAdmin && (
-                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-800">
+                <div className="mt-3">
                   <Link href={`/topics/${topic.id}/questions/create`}>
                     <Button size="sm" variant="outline" className="w-full">
                       {t("topics.addQuestion")}
@@ -390,7 +441,7 @@ export default function TopicsBrowse() {
                 </div>
               )}
             </div>
-          ))}
+          )})}
         </div>
       )}
 

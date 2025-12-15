@@ -37,10 +37,9 @@ export default function PracticeByQuestions() {
   // Fetch questions for all topics
   const topicIds = useMemo(() => (topics ?? []).map((t) => t.id), [topics]);
   
-  // We'll fetch questions per topic as needed, or we can batch fetch
-  // For now, let's fetch questions for visible topics
+  // Fetch questions filtered by selected part to avoid mixing Part 2/3
   const { data: allQuestions } = useGetQuestionsQuery(
-    { includeInactive: false },
+    { includeInactive: false, partNumber: selectedPart ?? undefined },
     { skip: !mounted }
   );
 
@@ -249,7 +248,7 @@ export default function PracticeByQuestions() {
             className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
               selectedPart === 3
                 ? "bg-brand-500 text-white shadow-sm"
-                : "bg-transparent text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800 border border-transparent"
+                : "bg-transparent text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover.bg-gray-800 border border-transparent"
             }`}
           >
             {t("practice.byQuestions.part3", "Luyện Part 3")}
@@ -337,29 +336,46 @@ export default function PracticeByQuestions() {
                   {topic.title}
                 </h2>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  {visibleQuestions.map((question) => (
-                    <Link
-                      key={question.id}
-                      href={`/topics/${topic.id}?questionId=${question.id}`}
-                      className="group rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:border-brand-500 hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:border-brand-500"
-                    >
-                      <p className="text-sm text-gray-900 dark:text-white line-clamp-3 group-hover:text-brand-600 dark:group-hover:text-brand-400">
-                        {question.questionText}
-                      </p>
-                      {question.attemptsCount && question.attemptsCount > 0 && (
-                        <div className="mt-2 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-                            {t("practice.byQuestions.answered")}
-                          </span>
-                        </div>
-                      )}
-                    </Link>
-                  ))}
+                  {visibleQuestions.map((question) => {
+                    const detailHref =
+                      selectedPart === 2
+                        ? `/topics/${topic.id}/part2?questionId=${question.id}`
+                        : selectedPart === 3
+                        ? `/topics/${topic.id}/part3?questionId=${question.id}`
+                        : `/topics/${topic.id}?questionId=${question.id}`;
+
+                    return (
+                      <Link
+                        key={question.id}
+                        href={detailHref}
+                        className="group rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:border-brand-500 hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:border-brand-500"
+                      >
+                        <p className="text-sm text-gray-900 dark:text-white line-clamp-3 group-hover:text-brand-600 dark:group-hover:text-brand-400">
+                          {question.questionText}
+                        </p>
+                        {question.attemptsCount && question.attemptsCount > 0 && (
+                          <div className="mt-2 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                              {t("practice.byQuestions.answered")}
+                            </span>
+                          </div>
+                        )}
+                      </Link>
+                    );
+                  })}
                 </div>
                 <div className="mt-6 flex justify-center">
-                  <Link href={`/topics/${topic.id}`}>
+                  <Link
+                    href={
+                      selectedPart === 2
+                        ? `/topics/${topic.id}/part2`
+                        : selectedPart === 3
+                        ? `/topics/${topic.id}/part3`
+                        : `/topics/${topic.id}`
+                    }
+                  >
                     <Button
-                      variant="default"
+                      variant="primary"
                       size="sm"
                       className="bg-pink-500 hover:bg-pink-600 text-white border-0"
                     >

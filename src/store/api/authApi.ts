@@ -105,6 +105,59 @@ export const authApi = createApi({
         }
       },
     }),
+    updateProfile: builder.mutation<
+      AuthResponse["user"],
+      {
+        fullName?: string;
+        phone?: string;
+        targetBandScore?: number;
+        currentLevel?: string;
+        examDate?: string;
+        dateOfBirth?: string;
+        bio?: string;
+      }
+    >({
+      query: (payload) => ({
+        url: "/api/auth/profile",
+        method: "PUT",
+        body: payload,
+      }),
+      transformResponse: (response: ApiResponse<AuthResponse["user"]>) =>
+        response.data,
+    }),
+    uploadAvatar: builder.mutation<{ avatarUrl: string }, FormData>({
+      query: (formData) => ({
+        url: "/api/auth/upload-avatar",
+        method: "POST",
+        body: formData,
+        prepareHeaders: (headers: Headers) => {
+          headers.delete("Content-Type");
+          return headers;
+        },
+      }),
+      transformResponse: (response: ApiResponse<{ avatarUrl: string }>) =>
+        response.data,
+    }),
+    deleteAvatar: builder.mutation<{ message: string }, void>({
+      query: () => ({
+        url: "/api/auth/avatar",
+        method: "DELETE",
+      }),
+      transformResponse: (response: ApiResponse<{ message: string }>) =>
+        response.data,
+    }),
+    changePassword: builder.mutation<
+      { message: string },
+      { currentPassword: string; newPassword: string }
+    >({
+      query: (payload) => ({
+        url: "/api/auth/change-password",
+        method: "POST",
+        body: payload,
+      }),
+      transformResponse: (response: ApiResponse<{ message: string }>) =>
+        response.data,
+    }),
   }),
 });
 
@@ -114,5 +167,9 @@ export const {
   useRefreshTokenMutation,
   useMeQuery,
   useLogoutMutation,
+  useUpdateProfileMutation,
+  useUploadAvatarMutation,
+  useDeleteAvatarMutation,
+  useChangePasswordMutation,
 } = authApi;
 

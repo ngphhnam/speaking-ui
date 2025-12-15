@@ -16,11 +16,26 @@ const difficultyOptions = [
   { value: "advanced", label: "Advanced" },
 ];
 
-const partOptions = [
-  { value: "1", label: "Part 1: Introduction & Interview" },
-  { value: "2", label: "Part 2: Long Turn" },
-  { value: "3", label: "Part 3: Discussion" },
-];
+// partOptions will be defined inside component to use translations
+
+/**
+ * Map UI selection to database partNumber
+ * "Part 2 & Part 3" → 2 (database value)
+ * "Part 1" → 1
+ * "Part 2" → 2
+ */
+const mapPartNumberToDatabase = (uiValue: string): number | undefined => {
+  if (!uiValue) return undefined;
+  
+  // "2&3" means Part 2 & Part 3, map to database value 2
+  if (uiValue === "2&3") {
+    return 2;
+  }
+  
+  // Otherwise, use the value directly
+  const num = Number(uiValue);
+  return isNaN(num) ? undefined : num;
+};
 
 const getErrorMessage = (error: unknown, fallback: string) => {
   if (error && typeof error === "object" && "status" in error && "data" in error) {
@@ -40,6 +55,12 @@ const getErrorMessage = (error: unknown, fallback: string) => {
 export default function CreateTopic() {
   const router = useRouter();
   const { t } = useTranslation();
+  
+  const partOptions = [
+    { value: "1", label: t("topics.part1", "Part 1: Introduction & Interview") },
+    { value: "2&3", label: t("topics.part2And3", "Part 2 & Part 3: Long Turn & Discussion") },
+  ];
+  
   const [topicForm, setTopicForm] = useState({
     title: "",
     description: "",
@@ -66,10 +87,13 @@ export default function CreateTopic() {
     setTopicSuccess(null);
 
     try {
+      // Map UI selection to database value
+      const partNumber = mapPartNumberToDatabase(topicForm.partNumber);
+      
       const result = await createTopic({
         title: topicForm.title.trim(),
         description: topicForm.description.trim() || undefined,
-        partNumber: topicForm.partNumber ? Number(topicForm.partNumber) : undefined,
+        partNumber: partNumber,
         topicCategory: topicForm.topicCategory.trim() || undefined,
         keywords: topicForm.keywords
           .split(",")
@@ -158,7 +182,6 @@ export default function CreateTopic() {
                   setTopicForm((prev) => ({ ...prev, title: e.target.value }))
                 }
                 placeholder={t("topics.titlePlaceholder")}
-                required
               />
             </div>
 

@@ -34,10 +34,19 @@ export const topicApi = createApi({
         const searchParams = new URLSearchParams();
         if (params.partNumber) searchParams.append("partNumber", params.partNumber.toString());
         if (params.category) searchParams.append("category", params.category);
-        if (params.includeInactive) searchParams.append("includeInactive", "true");
+        if (params.includeInactive)
+          searchParams.append("includeInactive", "true");
         return `/api/topics?${searchParams.toString()}`;
       },
-      transformResponse: (response: ApiResponse<TopicDto[]>) => response.data ?? [],
+      // Backend returns a paginated response: { data: { items: TopicDto[], ... }, ... }
+      transformResponse: (
+        response: ApiResponse<{
+          items: TopicDto[];
+          page: number;
+          pageSize: number;
+          totalCount: number;
+        }>
+      ) => response.data?.items ?? [],
       providesTags: ["Topic"],
     }),
     getTopicById: builder.query<TopicDto, string>({
@@ -54,6 +63,25 @@ export const topicApi = createApi({
       query: (limit = 10) => `/api/topics/popular?limit=${limit}`,
       transformResponse: (response: ApiResponse<TopicDto[]>) => response.data ?? [],
       providesTags: ["Topic"],
+    }),
+    getRecommendedTopics: builder.query<TopicDto[], void>({
+      query: () => "/api/topics/recommended",
+      transformResponse: (response: ApiResponse<TopicDto[]>) => response.data ?? [],
+      providesTags: ["Topic"],
+    }),
+    rateTopic: builder.mutation<{ message: string }, { topicId: string; rating: number }>({
+      query: ({ topicId, rating }) => ({
+        url: `/api/topics/${topicId}/rate`,
+        method: "POST",
+        body: { rating },
+      }),
+      transformResponse: (response: ApiResponse<{ message: string }>) => response.data,
+      invalidatesTags: (result, error, { topicId }) => [{ type: "Topic", id: topicId }],
+    }),
+    getTopicStatistics: builder.query<any, string>({
+      query: (topicId) => `/api/topics/${topicId}/statistics`,
+      transformResponse: (response: ApiResponse<any>) => response.data,
+      providesTags: (result, error, topicId) => [{ type: "Topic", id: topicId }],
     }),
     createTopic: builder.mutation<TopicDto, CreateTopicRequest>({
       query: (body) => ({
@@ -88,6 +116,9 @@ export const {
   useGetTopicByIdQuery,
   useGetTopicBySlugQuery,
   useGetPopularTopicsQuery,
+  useGetRecommendedTopicsQuery,
+  useRateTopicMutation,
+  useGetTopicStatisticsQuery,
   useCreateTopicMutation,
   useUpdateTopicMutation,
   useDeleteTopicMutation,

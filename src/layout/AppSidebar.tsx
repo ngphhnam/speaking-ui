@@ -15,6 +15,7 @@ import {
   PageIcon,
   PieChartIcon,
   PlugInIcon,
+  ShootingStarIcon,
   TableIcon,
   UserCircleIcon,
 } from "../icons/index";
@@ -36,6 +37,11 @@ const baseNavItems: NavItem[] = [
     path: "/",
   },
   {
+    icon: <PieChartIcon />,
+    name: "sidebar.dashboard",
+    path: "/dashboard",
+  },
+  {
     icon: <ListIcon />,
     name: "sidebar.practiceByQuestions",
     path: "/practice-by-questions",
@@ -44,6 +50,21 @@ const baseNavItems: NavItem[] = [
     icon: <DocsIcon />,
     name: "sidebar.exam",
     path: "/topics",
+  },
+  {
+    icon: <PageIcon />,
+    name: "sidebar.mockTest",
+    path: "/mock-test",
+  },
+  {
+    icon: <CalenderIcon />,
+    name: "sidebar.learningHistory",
+    path: "/learning-history",
+  },
+  {
+    icon: <UserCircleIcon />,
+    name: "sidebar.myProfile",
+    path: "/my-profile",
   },
 ];
 
@@ -73,6 +94,13 @@ const AppSidebar: React.FC = () => {
           { name: "sidebar.browseTopics", path: "/topics" },
           { name: "sidebar.createTopic", path: "/topics/create" },
         ],
+      });
+
+      // Admin: achievements management
+      items.push({
+        icon: <ShootingStarIcon />,
+        name: "sidebar.achievements",
+        path: "/achievements",
       });
     }
 
@@ -285,7 +313,7 @@ const AppSidebar: React.FC = () => {
       onMouseLeave={() => setIsHovered(false)}
     >
       <div
-        className={`py-8 flex  ${
+        className={` flex  ${
           !isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
         }`}
       >
