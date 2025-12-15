@@ -9,34 +9,9 @@ import Link from "next/link";
 import React, { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useRegisterMutation } from "@/store/api/authApi";
-import type { SerializedError } from "@reduxjs/toolkit";
 import { useTranslation } from "react-i18next";
 import { LanguageToggleButton } from "@/components/common/LanguageToggleButton";
-
-const getErrorMessage = (
-  error: unknown,
-  fallback: string
-) => {
-  // Check if error is a FetchBaseQueryError-like object
-  if (error && typeof error === "object" && "status" in error && "data" in error) {
-    const fetchError = error as { status: string | number; data?: unknown };
-    const data = fetchError.data as
-      | { detail?: string; title?: string; message?: string }
-      | string
-      | undefined;
-    if (typeof data === "string") return data;
-    if (data && typeof data === "object") {
-      if (data.detail) return data.detail;
-      if (data.message) return data.message;
-      if (data.title) return data.title;
-    }
-    return `Request failed with status ${fetchError.status}`;
-  }
-  if (error && typeof error === "object" && "message" in error) {
-    return String((error as SerializedError).message ?? fallback);
-  }
-  return fallback;
-};
+import { getErrorMessage } from "@/utils/errorHandler";
 
 export default function SignUpForm() {
   const router = useRouter();
@@ -82,7 +57,7 @@ export default function SignUpForm() {
       }).unwrap();
       router.push("/");
     } catch (error) {
-      setFormError(getErrorMessage(error, t("auth.signUpError", "Unable to sign up. Please try again.")));
+      setFormError(getErrorMessage(error, t, t("auth.signUpError", "Unable to sign up. Please try again.")));
     }
   };
 

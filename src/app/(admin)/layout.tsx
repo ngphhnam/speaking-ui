@@ -1,11 +1,18 @@
 "use client";
 
+import React from "react";
+import dynamic from "next/dynamic";
+
 import { useSidebar } from "@/context/SidebarContext";
 import AppHeader from "@/layout/AppHeader";
 import AppSidebar from "@/layout/AppSidebar";
 import Backdrop from "@/layout/Backdrop";
-import RequireAuth from "@/components/auth/RequireAuth";
-import React from "react";
+
+// Disable SSR for auth guard to avoid hydration mismatches
+const RequireAuthNoSSR = dynamic(
+  () => import("@/components/auth/RequireAuth"),
+  { ssr: false }
+);
 
 export default function AdminLayout({
   children,
@@ -22,23 +29,23 @@ export default function AdminLayout({
     : "lg:ml-[90px]";
 
   return (
-    <RequireAuth>
-    <div className="min-h-screen xl:flex">
-      {/* Sidebar and Backdrop */}
-      <AppSidebar />
-      <Backdrop />
-      {/* Main Content Area */}
-      <div
-        className={`flex-1 transition-all  duration-300 ease-in-out ${mainContentMargin}`}
-      >
-        {/* Header */}
-        <AppHeader />
-        {/* Page Content */}
+    <RequireAuthNoSSR>
+      <div className="min-h-screen xl:flex">
+        {/* Sidebar and Backdrop */}
+        <AppSidebar />
+        <Backdrop />
+        {/* Main Content Area */}
+        <div
+          className={`flex-1 transition-all  duration-300 ease-in-out ${mainContentMargin}`}
+        >
+          {/* Header */}
+          <AppHeader />
+          {/* Page Content */}
           <div className="p-4 mx-auto max-w-(--breakpoint-2xl) md:p-6">
             {children}
           </div>
         </div>
       </div>
-    </RequireAuth>
+    </RequireAuthNoSSR>
   );
 }

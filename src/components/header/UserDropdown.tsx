@@ -5,8 +5,11 @@ import React, { useState } from "react";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { useAppSelector } from "@/store/hooks";
+import AvatarText from "../ui/avatar/AvatarText";
+import { useTranslation } from "react-i18next";
 
 export default function UserDropdown() {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const { user } = useAppSelector((state) => state.auth);
   
@@ -14,6 +17,7 @@ export default function UserDropdown() {
   const displayName = user?.fullName ? user.fullName.split(" ")[0] : "User";
   const fullName = user?.fullName || "User";
   const email = user?.email || "";
+  const avatarUrl = user?.avatarUrl;
 
 function toggleDropdown(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
   e.stopPropagation();
@@ -30,12 +34,17 @@ function toggleDropdown(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
         className="flex items-center text-gray-700 dark:text-gray-400 dropdown-toggle"
       >
         <span className="mr-3 overflow-hidden rounded-full h-11 w-11">
-          <Image
-            width={44}
-            height={44}
-            src="/images/user/owner.jpg"
-            alt="User"
-          />
+          {avatarUrl ? (
+            <Image
+              width={44}
+              height={44}
+              src={avatarUrl}
+              alt={fullName}
+              className="object-cover w-full h-full"
+            />
+          ) : (
+            <AvatarText name={fullName} className="h-11 w-11" />
+          )}
         </span>
 
         <span className="block mr-1 font-medium text-theme-sm">{displayName}</span>
@@ -81,7 +90,7 @@ function toggleDropdown(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
             <DropdownItem
               onItemClick={closeDropdown}
               tag="a"
-              href="/profile"
+              href="/my-profile"
               className="flex items-center gap-3 px-3 py-2 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
             >
               <svg
@@ -99,14 +108,14 @@ function toggleDropdown(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
                   fill=""
                 />
               </svg>
-              Edit profile
+              {t("userDropdown.editProfile", "Chỉnh sửa hồ sơ")}
             </DropdownItem>
           </li>
           <li>
             <DropdownItem
               onItemClick={closeDropdown}
               tag="a"
-              href="/profile"
+              href="/settings"
               className="flex items-center gap-3 px-3 py-2 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
             >
               <svg
@@ -124,14 +133,14 @@ function toggleDropdown(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
                   fill=""
                 />
               </svg>
-              Account settings
+              {t("userDropdown.accountSettings", "Cài đặt tài khoản")}
             </DropdownItem>
           </li>
           <li>
             <DropdownItem
               onItemClick={closeDropdown}
               tag="a"
-              href="/profile"
+              href="/dashboard"
               className="flex items-center gap-3 px-3 py-2 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
             >
               <svg
@@ -149,7 +158,7 @@ function toggleDropdown(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
                   fill=""
                 />
               </svg>
-              Support
+              {t("userDropdown.dashboard", "Bảng điều khiển")}
             </DropdownItem>
           </li>
         </ul>
@@ -172,7 +181,7 @@ function toggleDropdown(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
               fill=""
             />
           </svg>
-          Sign out
+          {t("userDropdown.signOut", "Đăng xuất")}
         </Link>
       </Dropdown>
     </div>

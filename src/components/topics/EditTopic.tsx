@@ -1,7 +1,8 @@
 "use client";
 
-import { FormEvent, useState, useEffect } from "react";
+import { FormEvent, useState, useEffect, useMemo } from "react";
 import { useGetTopicByIdQuery, useUpdateTopicMutation } from "@/store/api/topicApi";
+import { useGetQuestionsQuery } from "@/store/api/questionApi";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import TextArea from "@/components/form/input/TextArea";
@@ -11,11 +12,44 @@ import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import Link from "next/link";
 
-const partOptions = [
-  { value: "1", label: "Part 1: Introduction & Interview" },
-  { value: "2", label: "Part 2: Long Turn" },
-  { value: "3", label: "Part 3: Discussion" },
-];
+// partOptions will be defined inside component to use translations
+
+/**
+ * Map UI selection to database partNumber
+ * "Part 2 & Part 3" → 2 (database value)
+ * "Part 1" → 1
+ * "Part 2" → 2
+ */
+const mapPartNumberToDatabase = (uiValue: string): number | undefined => {
+  if (!uiValue) return undefined;
+  
+  // "2&3" means Part 2 & Part 3, map to database value 2
+  if (uiValue === "2&3") {
+    return 2;
+  }
+  
+  // Otherwise, use the value directly
+  const num = Number(uiValue);
+  return isNaN(num) ? undefined : num;
+};
+
+/**
+ * Map database partNumber to UI value
+ * If topic has partNumber=2 and has PART3 questions → "2&3"
+ * If topic has partNumber=2 and no PART3 questions → "2"
+ * Otherwise → direct mapping
+ */
+const mapDatabaseToUI = (partNumber: number | null | undefined, hasPart3Questions: boolean): string => {
+  if (!partNumber) return "";
+  
+  // If partNumber is 2 and has PART3 questions, show "2&3"
+  if (partNumber === 2 && hasPart3Questions) {
+    return "2&3";
+  }
+  
+  // Otherwise, return as string
+  return partNumber.toString();
+};
 
 const getErrorMessage = (error: unknown, fallback: string) => {
   if (error && typeof error === "object" && "status" in error && "data" in error) {
@@ -40,7 +74,13 @@ export default function EditTopic({ topicId }: EditTopicProps) {
   const router = useRouter();
   const { t } = useTranslation();
   const { data: topic, isLoading: isLoadingTopic } = useGetTopicByIdQuery(topicId);
+  const { data: questions } = useGetQuestionsQuery({ topicId, includeInactive: false });
   const [updateTopic, { isLoading: isUpdatingTopic }] = useUpdateTopicMutation();
+
+  const partOptions = [
+    { value: "1", label: t("topics.part1", "Part 1: Introduction & Interview") },
+    { value: "2&3", label: t("topics.part2And3", "Part 2 & Part 3: Long Turn & Discussion") },
+  ];
 
   const [topicForm, setTopicForm] = useState({
     title: "",
@@ -53,17 +93,26 @@ export default function EditTopic({ topicId }: EditTopicProps) {
   const [topicError, setTopicError] = useState<string | null>(null);
   const [topicSuccess, setTopicSuccess] = useState<string | null>(null);
 
+  // Check if topic has PART3 questions
+  const hasPart3Questions = useMemo(() => {
+    if (!Array.isArray(questions)) return false;
+    return questions.some((q) => q.questionType === "PART3");
+  }, [questions]);
+
   useEffect(() => {
     if (topic) {
+      // Map database partNumber to UI value
+      const uiPartNumber = mapDatabaseToUI(topic.partNumber, hasPart3Questions);
+      
       setTopicForm({
         title: topic.title || "",
         description: topic.description || "",
-        partNumber: topic.partNumber?.toString() || "",
+        partNumber: uiPartNumber,
         topicCategory: topic.topicCategory || "",
         keywords: topic.keywords?.join(", ") || "",
       });
     }
-  }, [topic]);
+  }, [topic, hasPart3Questions]);
 
   const handleUpdateTopic = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -76,12 +125,15 @@ export default function EditTopic({ topicId }: EditTopicProps) {
     setTopicSuccess(null);
 
     try {
+      // Map UI selection to database value
+      const partNumber = mapPartNumberToDatabase(topicForm.partNumber);
+      
       await updateTopic({
         id: topicId,
         data: {
           title: topicForm.title.trim(),
           description: topicForm.description.trim() || undefined,
-          partNumber: topicForm.partNumber ? Number(topicForm.partNumber) : undefined,
+          partNumber: partNumber,
           topicCategory: topicForm.topicCategory.trim() || undefined,
           keywords: topicForm.keywords
             .split(",")
@@ -145,7 +197,6 @@ export default function EditTopic({ topicId }: EditTopicProps) {
                   setTopicForm((prev) => ({ ...prev, title: e.target.value }))
                 }
                 placeholder={t("topics.titlePlaceholder")}
-                required
               />
             </div>
 
@@ -229,6 +280,11 @@ export default function EditTopic({ topicId }: EditTopicProps) {
     </div>
   );
 }
+
+
+
+
+
 
 
 

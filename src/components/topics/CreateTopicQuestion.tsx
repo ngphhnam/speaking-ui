@@ -8,6 +8,7 @@ import Label from "@/components/form/Label";
 import TextArea from "@/components/form/input/TextArea";
 import Button from "@/components/ui/button/Button";
 import type { SerializedError } from "@reduxjs/toolkit";
+import { useTranslation } from "react-i18next";
 
 const difficultyOptions = [
   { value: "beginner", label: "Beginner" },
@@ -15,20 +16,26 @@ const difficultyOptions = [
   { value: "advanced", label: "Advanced" },
 ];
 
-const partOptions = [
-  { value: "1", label: "Part 1: Introduction & Interview" },
-  { value: "2", label: "Part 2: Long Turn" },
-  { value: "3", label: "Part 3: Discussion" },
-];
+// partOptions will be defined inside component to use translations
 
-const questionTypeOptions = [
-  { value: "personal", label: "Personal Experience" },
-  { value: "opinion", label: "Opinion" },
-  { value: "descriptive", label: "Descriptive" },
-  { value: "describe", label: "Describe" },
-  { value: "compare", label: "Compare" },
-  { value: "discuss", label: "Discuss" },
-];
+/**
+ * Map UI selection to database partNumber
+ * "Part 2 & Part 3" → 2 (database value)
+ * "Part 1" → 1
+ * "Part 2" → 2
+ */
+const mapPartNumberToDatabase = (uiValue: string): number | undefined => {
+  if (!uiValue) return undefined;
+  
+  // "2&3" means Part 2 & Part 3, map to database value 2
+  if (uiValue === "2&3") {
+    return 2;
+  }
+  
+  // Otherwise, use the value directly
+  const num = Number(uiValue);
+  return isNaN(num) ? undefined : num;
+};
 
 const getErrorMessage = (error: unknown, fallback: string) => {
   // Check if error is a FetchBaseQueryError-like object
@@ -47,6 +54,13 @@ const getErrorMessage = (error: unknown, fallback: string) => {
 };
 
 export default function CreateTopicQuestion() {
+  const { t } = useTranslation();
+  
+  const partOptions = [
+    { value: "1", label: t("topics.part1", "Part 1: Introduction & Interview") },
+    { value: "2&3", label: t("topics.part2And3", "Part 2 & Part 3: Long Turn & Discussion") },
+  ];
+  
   const [activeTab, setActiveTab] = useState<"topic" | "question">("topic");
   const [selectedTopicId, setSelectedTopicId] = useState<string>("");
 
@@ -89,6 +103,28 @@ export default function CreateTopicQuestion() {
     return (topics ?? []).filter((t) => t.isActive);
   }, [topics]);
 
+  const selectedTopic = useMemo(() => {
+    return availableTopics.find((t) => t.id === selectedTopicId);
+  }, [availableTopics, selectedTopicId]);
+
+  // Derive allowed question types based on topic.partNumber
+  const questionTypeOptions = useMemo(() => {
+    if (!selectedTopic) return [];
+    if (selectedTopic.partNumber === 1) {
+      return [{ value: "PART1", label: t("topics.part1", "Part 1: Introduction & Interview") }];
+    }
+    if (selectedTopic.partNumber === 2) {
+      return [
+        { value: "PART2", label: t("topics.part2", "Part 2: Long Turn") },
+        { value: "PART3", label: t("topics.part3", "Part 3: Discussion") },
+      ];
+    }
+    if (selectedTopic.partNumber === 3) {
+      return [{ value: "PART3", label: t("topics.part3", "Part 3: Discussion") }];
+    }
+    return [];
+  }, [selectedTopic, t]);
+
   const isQuestionFormValid = useMemo(() => {
     return (
       selectedTopicId &&
@@ -98,6 +134,17 @@ export default function CreateTopicQuestion() {
       questionForm.timeLimitSeconds
     );
   }, [selectedTopicId, questionForm]);
+
+  // Ensure questionType stays in sync with allowed options for the selected topic
+  useEffect(() => {
+    const allowed = questionTypeOptions.map((opt) => opt.value);
+    if (allowed.length === 0) {
+      return;
+    }
+    if (!allowed.includes(questionForm.questionType)) {
+      setQuestionForm((prev) => ({ ...prev, questionType: allowed[0] }));
+    }
+  }, [questionTypeOptions, questionForm.questionType]);
 
   const handleCreateTopic = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -110,10 +157,13 @@ export default function CreateTopicQuestion() {
     setTopicSuccess(null);
 
     try {
+      // Map UI selection to database value
+      const partNumber = mapPartNumberToDatabase(topicForm.partNumber);
+      
       const result = await createTopic({
         title: topicForm.title.trim(),
         description: topicForm.description.trim() || undefined,
-        partNumber: topicForm.partNumber ? Number(topicForm.partNumber) : undefined,
+        partNumber: partNumber,
         difficultyLevel: topicForm.difficultyLevel || undefined,
         topicCategory: topicForm.topicCategory.trim() || undefined,
         keywords: topicForm.keywords
@@ -274,7 +324,6 @@ export default function CreateTopicQuestion() {
                     setTopicForm((prev) => ({ ...prev, title: e.target.value }))
                   }
                   placeholder="e.g., Education System"
-                  required
                 />
               </div>
 
@@ -381,7 +430,6 @@ export default function CreateTopicQuestion() {
                 <select
                   value={selectedTopicId}
                   onChange={(e) => setSelectedTopicId(e.target.value)}
-                  required
                   className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-900 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
                 >
                   <option value="">Select a topic</option>
@@ -410,7 +458,6 @@ export default function CreateTopicQuestion() {
                   }
                   placeholder="Enter the question..."
                   rows={3}
-                  required
                 />
               </div>
 
@@ -424,8 +471,7 @@ export default function CreateTopicQuestion() {
                     onChange={(e) =>
                       setQuestionForm((prev) => ({ ...prev, questionType: e.target.value }))
                     }
-                    required
-                    className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-900 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+                  className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-900 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
                   >
                     <option value="">Select Type</option>
                     {questionTypeOptions.map((opt) => (
@@ -434,6 +480,14 @@ export default function CreateTopicQuestion() {
                       </option>
                     ))}
                   </select>
+                  {selectedTopic?.partNumber === 2 && (
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      {t(
+                        "topics.part2QuestionHint",
+                        "Chủ đề thuộc Part 2, hãy chọn câu hỏi thuộc Part 2 hoặc Part 3."
+                      )}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -450,9 +504,8 @@ export default function CreateTopicQuestion() {
                       }))
                     }
                     placeholder="120"
-                    min="30"
-                    max="600"
-                    required
+                  min="30"
+                  max="600"
                   />
                 </div>
               </div>
@@ -473,8 +526,7 @@ export default function CreateTopicQuestion() {
                   placeholder="e.g., 6.0"
                   min="0"
                   max="9"
-                  step="0.5"
-                  required
+                  step={0.5}
                 />
               </div>
 

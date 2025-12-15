@@ -9,28 +9,9 @@ import Link from "next/link";
 import React, { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLoginMutation, useMeQuery } from "@/store/api/authApi";
-import type { SerializedError } from "@reduxjs/toolkit";
 import { useTranslation } from "react-i18next";
 import { LanguageToggleButton } from "@/components/common/LanguageToggleButton";
-
-const getErrorMessage = (
-  error: any,
-  fallback: string
-) => {
-  if (error && typeof error === "object" && "status" in error) {
-    const data =
-      (error.data as { detail?: string; message?: string } | string | undefined) ??
-      undefined;
-    if (typeof data === "string") return data;
-    if (data?.detail) return data.detail;
-    if (data?.message) return data.message;
-    return `Request failed with status ${error.status}`;
-  }
-  if (error && typeof error === "object" && "message" in error) {
-    return String((error as SerializedError).message ?? fallback);
-  }
-  return fallback;
-};
+import { getErrorMessage } from "@/utils/errorHandler";
 
 export default function SignInForm() {
   const router = useRouter();
@@ -77,7 +58,7 @@ export default function SignInForm() {
       await login({ email: email.trim(), password }).unwrap();
       router.push("/");
     } catch (error) {
-      setFormError(getErrorMessage(error, t("auth.signInError", "Unable to sign in. Please try again.")));
+      setFormError(getErrorMessage(error, t, t("auth.signInError", "Unable to sign in. Please try again.")));
     }
   };
 

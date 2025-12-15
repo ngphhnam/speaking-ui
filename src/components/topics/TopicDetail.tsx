@@ -24,11 +24,13 @@ import { useTranslation } from "react-i18next";
 import RecordingModal from "./RecordingModal";
 import AudioConfirmationModal from "./AudioConfirmationModal";
 import ScoringLoadingModal from "./ScoringLoadingModal";
+import RecordingsHistoryModal from "./RecordingsHistoryModal";
 import { Modal } from "@/components/ui/modal";
 import { useAppSelector } from "@/store/hooks";
 
 type TopicDetailProps = {
   topicId: string;
+  questionPartNumber?: number;
 };
 
 const partLabels: Record<number, string> = {
@@ -66,7 +68,7 @@ const normalizeSuggestedStructure = (value?: string | null): string[] => {
     .filter(Boolean);
 };
 
-export default function TopicDetail({ topicId }: TopicDetailProps) {
+export default function TopicDetail({ topicId, questionPartNumber }: TopicDetailProps) {
   const { t } = useTranslation();
   const { accessToken } = useAppSelector((state) => state.auth);
   const {
@@ -79,7 +81,11 @@ export default function TopicDetail({ topicId }: TopicDetailProps) {
     data: questions,
     isLoading: isQuestionsLoading,
     error: questionsError,
-  } = useGetQuestionsQuery({ topicId, includeInactive: false });
+  } = useGetQuestionsQuery({
+    topicId,
+    includeInactive: false,
+    partNumber: questionPartNumber,
+  });
 
   const isLoading = isTopicLoading || isQuestionsLoading;
 
@@ -99,9 +105,31 @@ export default function TopicDetail({ topicId }: TopicDetailProps) {
     return t("topics.somethingWentWrong", "Something went wrong while loading the topic.");
   }, [topicError, questionsError, t]);
 
-  // Ensure questions is always an array
-  const questionsArray = Array.isArray(questions) ? questions : [];
+  // Ensure questions is always an array and filter by questionType matching topic's partNumber
+  const filteredQuestions = useMemo(() => {
+    if (!Array.isArray(questions)) return [];
+    
+    // If topic doesn't have partNumber, return all questions
+    if (!topic?.partNumber) return questions;
+    
+    // Map partNumber to QuestionType(s)
+    // Part 1 → only PART1
+    // Part 2 → PART2 and PART3 (Part 3 questions belong to Part 2 topics)
+    // Part 3 → only PART3 (if exists as separate topic)
+    if (topic.partNumber === 1) {
+      return questions.filter((q) => q.questionType === "PART1");
+    } else if (topic.partNumber === 2) {
+      // Part 2 topics can have both PART2 and PART3 questions
+      return questions.filter((q) => q.questionType === "PART2" || q.questionType === "PART3");
+    } else if (topic.partNumber === 3) {
+      return questions.filter((q) => q.questionType === "PART3");
+    }
+    
+    // Fallback: return all questions
+    return questions;
+  }, [questions, topic?.partNumber]);
 
+  const questionsArray = filteredQuestions;
   const totalQuestions = questionsArray.length;
 
   const aggregatedStats = useMemo(() => {
@@ -215,6 +243,10 @@ export default function TopicDetail({ topicId }: TopicDetailProps) {
   const [activeRecordingQuestionId, setActiveRecordingQuestionId] = useState<string | null>(null);
   const [showConfirmationModal, setShowConfirmationModal] = useState<string | null>(null);
   const [sessionCreated, setSessionCreated] = useState(false);
+  const [recordingsHistoryModal, setRecordingsHistoryModal] = useState<{
+    questionId: string;
+    questionText: string;
+  } | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -898,6 +930,12 @@ export default function TopicDetail({ topicId }: TopicDetailProps) {
         isSubmitting={currentConfirmationQuestionId ? isScoringByQuestion[currentConfirmationQuestionId] ?? false : false}
       />
       <ScoringLoadingModal isOpen={isAnyScoring} />
+      <RecordingsHistoryModal
+        isOpen={recordingsHistoryModal !== null}
+        onClose={() => setRecordingsHistoryModal(null)}
+        questionId={recordingsHistoryModal?.questionId ?? ""}
+        questionText={recordingsHistoryModal?.questionText ?? ""}
+      />
       {/* Generate Options Modal */}
       <Modal
         isOpen={generateModalOpen !== null}
@@ -999,12 +1037,18 @@ export default function TopicDetail({ topicId }: TopicDetailProps) {
             </p>
           )}
           <div className="mt-2 flex flex-wrap gap-2">
-            {topic?.partNumber && (
+            {(() => {
+              const effectivePart =
+                typeof questionPartNumber === "number"
+                  ? questionPartNumber
+                  : topic?.partNumber;
+              if (!effectivePart) return null;
+              return (
               <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-medium text-brand-700 dark:bg-brand-900/30 dark:text-brand-300">
-                {partLabels[topic.partNumber] ??
-                  `Part ${topic.partNumber.toString()}`}
+                {partLabels[effectivePart] ?? `Part ${effectivePart.toString()}`}
               </span>
-            )}
+              );
+            })()}
             {topic?.difficultyLevel && (
               <span
                 className={`rounded-full px-3 py-1 text-xs font-medium ${
@@ -1102,7 +1146,7 @@ export default function TopicDetail({ topicId }: TopicDetailProps) {
                       tabIndex={0}
                     >
                       <div className="mb-2 flex items-start justify-between gap-3">
-                        <p className="font-medium text-gray-900 dark:text-white">
+                        <p className="font-medium text-gray-900 dark:text-white whitespace-pre-line">
                           {question.questionText}
                         </p>
                         {question.questionType && (
@@ -1145,12 +1189,55 @@ export default function TopicDetail({ topicId }: TopicDetailProps) {
                         )}
 
                       <div className="mt-3 flex flex-wrap items-center gap-4 text-[11px] text-gray-500 dark:text-gray-400">
-                        <span>
-                          {t("topics.attempts", "Attempts")}:{" "}
-                          <span className="font-medium text-gray-800 dark:text-gray-200">
-                            {question.attemptsCount}
+                        {question.attemptsCount && question.attemptsCount > 0 ? (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setRecordingsHistoryModal({
+                                questionId: question.id,
+                                questionText: question.questionText,
+                              });
+                            }}
+                            className="group inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-2.5 py-1 transition hover:bg-brand-100 dark:bg-brand-900/30 dark:hover:bg-brand-900/50"
+                          >
+                            <svg
+                              className="h-3.5 w-3.5 text-brand-600 dark:text-brand-400"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                              />
+                            </svg>
+                            <span className="font-medium text-brand-700 dark:text-brand-300">
+                              {question.attemptsCount} {t("topics.attempts", "lần trả lời")}
+                            </span>
+                            <svg
+                              className="h-3 w-3 text-brand-600 dark:text-brand-400"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 5l7 7-7 7"
+                              />
+                            </svg>
+                          </button>
+                        ) : (
+                          <span>
+                            {t("topics.attempts", "Attempts")}:{" "}
+                            <span className="font-medium text-gray-800 dark:text-gray-200">
+                              {question.attemptsCount ?? 0}
+                            </span>
                           </span>
-                        </span>
+                        )}
                         {typeof question.avgScore === "number" && (
                           <span>
                             {t("topics.avgScore", "Avg score")}:{" "}

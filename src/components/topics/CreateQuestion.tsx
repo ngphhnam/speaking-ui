@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, useEffect } from "react";
 import { useGetTopicByIdQuery } from "@/store/api/topicApi";
 import { useCreateQuestionMutation } from "@/store/api/questionApi";
 import Input from "@/components/form/input/InputField";
@@ -37,6 +37,7 @@ type QuestionFormData = {
   suggestedStructure: string;
   sampleAnswers: string;
   keyVocabulary: string;
+  questionType: string;
 };
 
 export default function CreateQuestion({ topicId }: CreateQuestionProps) {
@@ -50,6 +51,7 @@ export default function CreateQuestion({ topicId }: CreateQuestionProps) {
       suggestedStructure: "",
       sampleAnswers: "",
       keyVocabulary: "",
+      questionType: "",
     },
   ]);
 
@@ -98,19 +100,51 @@ export default function CreateQuestion({ topicId }: CreateQuestionProps) {
   };
 
   const isQuestionValid = (question: QuestionFormData) => {
-    return question.questionText.trim() !== "";
+    return question.questionText.trim() !== "" && !!question.questionType;
   };
+
+  // Allowed question types based on topic part
+  const questionTypeOptions = (() => {
+    if (!topic?.partNumber) return [];
+    if (topic.partNumber === 1) {
+      return [{ value: "PART1", label: t("topics.part1", "Part 1: Introduction & Interview") }];
+    }
+    if (topic.partNumber === 2) {
+      return [
+        { value: "PART2", label: t("topics.part2", "Part 2: Long Turn") },
+        { value: "PART3", label: t("topics.part3", "Part 3: Discussion") },
+      ];
+    }
+    if (topic.partNumber === 3) {
+      return [{ value: "PART3", label: t("topics.part3", "Part 3: Discussion") }];
+    }
+    return [];
+  })();
+
+  // Ensure each question has a valid default type when topic changes
+  useEffect(() => {
+    if (questionTypeOptions.length === 0) return;
+    setQuestions((prev) =>
+      prev.map((q) =>
+        q.questionType && questionTypeOptions.some((opt) => opt.value === q.questionType)
+          ? q
+          : { ...q, questionType: questionTypeOptions[0].value }
+      )
+    );
+  }, [questionTypeOptions]);
 
   const buildQuestionPayload = (question: QuestionFormData) => {
     const payload: {
       topicId: string;
       questionText: string;
+      questionType: string;
       suggestedStructure?: string;
       sampleAnswers?: string[];
       keyVocabulary?: string[];
     } = {
       topicId,
       questionText: question.questionText.trim(),
+      questionType: question.questionType,
     };
 
     if (question.suggestedStructure.trim()) {
@@ -141,6 +175,11 @@ export default function CreateQuestion({ topicId }: CreateQuestionProps) {
 
     if (!question.questionText.trim()) {
       setQuestionErrors({ ...questionErrors, [index]: "Question text is required" });
+      return;
+    }
+
+    if (!question.questionType) {
+      setQuestionErrors({ ...questionErrors, [index]: "Question type is required" });
       return;
     }
 
@@ -179,6 +218,9 @@ export default function CreateQuestion({ topicId }: CreateQuestionProps) {
     questions.forEach((question, index) => {
       if (!question.questionText.trim()) {
         errors[index] = "Question text is required";
+      }
+      if (!question.questionType) {
+        errors[index] = "Question type is required";
       }
     });
 
@@ -305,6 +347,34 @@ export default function CreateQuestion({ topicId }: CreateQuestionProps) {
                     rows={3}
                     required
                   />
+                </div>
+
+                <div>
+                  <Label>
+                    {t("topics.questionType", "Loại câu hỏi")} <span className="text-error-500">*</span>
+                  </Label>
+                  <select
+                    value={question.questionType}
+                    onChange={(e) => updateQuestion(index, "questionType", e.target.value)}
+                    className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-900 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+                  >
+                    {questionTypeOptions.length === 0 && (
+                      <option value="">{t("topics.selectType", "Chọn loại câu hỏi")}</option>
+                    )}
+                    {questionTypeOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                  {topic?.partNumber === 2 && (
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      {t(
+                        "topics.part2QuestionHint",
+                        "Chủ đề thuộc Part 2, hãy chọn câu hỏi thuộc Part 2 hoặc Part 3."
+                      )}
+                    </p>
+                  )}
                 </div>
 
                 <div>

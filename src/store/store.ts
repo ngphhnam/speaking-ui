@@ -6,6 +6,20 @@ import { questionApi } from "@/store/api/questionApi";
 import { answerApi } from "@/store/api/answerApi";
 import { userApi } from "@/store/api/userApi";
 import { generateApi } from "@/store/api/generateApi";
+import { recordingApi } from "@/store/api/recordingApi";
+import { statisticsApi } from "@/store/api/statisticsApi";
+import { analysisResultsApi } from "@/store/api/analysisResultsApi";
+import { mockTestApi } from "@/store/api/mockTestApi";
+import { userProgressApi } from "@/store/api/userProgressApi";
+import { leaderboardApi } from "@/store/api/leaderboardApi";
+import { userSettingsApi } from "@/store/api/userSettingsApi";
+import { vocabularyApi } from "@/store/api/vocabularyApi";
+import { userVocabularyApi } from "@/store/api/userVocabularyApi";
+import { achievementApi } from "@/store/api/achievementApi";
+import { speakingSessionApi } from "@/store/api/speakingSessionApi";
+import { userDraftsApi } from "@/store/api/userDraftsApi";
+import { adminApi } from "@/store/api/adminApi";
+import { healthApi } from "@/store/api/healthApi";
 
 export const makeStore = () =>
   configureStore({
@@ -17,6 +31,20 @@ export const makeStore = () =>
       [answerApi.reducerPath]: answerApi.reducer,
       [userApi.reducerPath]: userApi.reducer,
       [generateApi.reducerPath]: generateApi.reducer,
+      [recordingApi.reducerPath]: recordingApi.reducer,
+      [statisticsApi.reducerPath]: statisticsApi.reducer,
+      [analysisResultsApi.reducerPath]: analysisResultsApi.reducer,
+      [mockTestApi.reducerPath]: mockTestApi.reducer,
+      [userProgressApi.reducerPath]: userProgressApi.reducer,
+      [leaderboardApi.reducerPath]: leaderboardApi.reducer,
+      [userSettingsApi.reducerPath]: userSettingsApi.reducer,
+      [vocabularyApi.reducerPath]: vocabularyApi.reducer,
+      [userVocabularyApi.reducerPath]: userVocabularyApi.reducer,
+      [achievementApi.reducerPath]: achievementApi.reducer,
+      [speakingSessionApi.reducerPath]: speakingSessionApi.reducer,
+      [userDraftsApi.reducerPath]: userDraftsApi.reducer,
+      [adminApi.reducerPath]: adminApi.reducer,
+      [healthApi.reducerPath]: healthApi.reducer,
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware().concat(
@@ -25,7 +53,21 @@ export const makeStore = () =>
         questionApi.middleware,
         answerApi.middleware,
         userApi.middleware,
-        generateApi.middleware
+        generateApi.middleware,
+        recordingApi.middleware,
+        statisticsApi.middleware,
+        analysisResultsApi.middleware,
+        mockTestApi.middleware,
+        userProgressApi.middleware,
+        leaderboardApi.middleware,
+        userSettingsApi.middleware,
+        vocabularyApi.middleware,
+        userVocabularyApi.middleware,
+        achievementApi.middleware,
+        speakingSessionApi.middleware,
+        userDraftsApi.middleware,
+        adminApi.middleware,
+        healthApi.middleware
       ),
     devTools: process.env.NODE_ENV !== "production",
   });

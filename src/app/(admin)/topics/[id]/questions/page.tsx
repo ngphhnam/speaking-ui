@@ -20,3 +20,9 @@ const QuestionsManagePage = async ({ params }: QuestionsManagePageProps) => {
 export default QuestionsManagePage;
 
 
+
+
+
+
+
+
