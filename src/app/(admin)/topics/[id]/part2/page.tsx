@@ -20,3 +20,6 @@ const TopicPart2Page = async ({ params }: TopicPart2PageProps) => {
 export default TopicPart2Page;
 
 
+
+
+
