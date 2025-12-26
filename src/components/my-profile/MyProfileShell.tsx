@@ -14,6 +14,7 @@ export default function MyProfileShell() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
+  const subscriptionType = (user as any)?.subscriptionType as string | undefined;
   const [updateProfile, { isLoading }] = useUpdateProfileMutation();
   
   const [isEditing, setIsEditing] = useState(false);
@@ -222,6 +223,15 @@ export default function MyProfileShell() {
                 </label>
                 <span className="inline-flex rounded-full bg-brand-100 px-3 py-1 text-sm font-medium text-brand-700 dark:bg-brand-900/30 dark:text-brand-400">
                   {user?.role || "User"}
+                </span>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t("profile.subscription", "Gói hiện tại")}
+                </label>
+                <span className="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                  {subscriptionType ? subscriptionType : t("profile.notSet", "Chưa cập nhật")}
                 </span>
               </div>
 

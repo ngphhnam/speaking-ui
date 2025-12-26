@@ -22,12 +22,17 @@ export default function SignInForm() {
   const [formError, setFormError] = useState<string | null>(null);
 
   const [login, { isLoading }] = useLoginMutation();
-  const { data: me } = useMeQuery();
+  const { data: me, isLoading: isLoadingMe, isError: isMeError } = useMeQuery(undefined, {
+    // Skip query if we're on signin page and there's no user in state
+    // This prevents redirect loop after logout
+    refetchOnMountOrArgChange: true,
+  });
   const { t } = useTranslation();
 
   // Nếu đã đăng nhập (cookie còn hợp lệ và /me trả về user), tự động chuyển về trang home hoặc redirect URL
+  // Chỉ redirect nếu query thành công và có data, không redirect nếu đang loading hoặc error
   useEffect(() => {
-    if (me) {
+    if (me && !isLoadingMe && !isMeError) {
       // Get redirect param from URL
       if (typeof window !== "undefined") {
         const searchParams = new URLSearchParams(window.location.search);
@@ -41,7 +46,7 @@ export default function SignInForm() {
         router.replace("/");
       }
     }
-  }, [me, router]);
+  }, [me, isLoadingMe, isMeError, router]);
 
   const isSubmitDisabled = useMemo(() => {
     return !email.trim() || !password.trim() || isLoading;

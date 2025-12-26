@@ -197,6 +197,8 @@ const resources = {
         somethingWentWrong: "Something went wrong while loading the topic.",
         unableToScore: "Unable to score your answer right now. Please ensure the Llama scoring service is running.",
         unableToGenerateOutline: "Unable to generate outline at the moment. Please try again in a few seconds.",
+        limitReached: "Practice Limit Reached",
+        upgradeToPremium: "Upgrade to Premium",
         suggestedOutlineLabel: "Suggested outline",
         audioRecorded: "Audio recorded",
         audioConfirmationMessage: "Your recording is ready. Do you want to send it for scoring or record again?",
@@ -362,6 +364,7 @@ const resources = {
         SERVER_003: "Database connection error",
         NETWORK_001: "Network connection failed",
         NETWORK_002: "Request timeout",
+        BIZ_006: "Free users are limited to 5 practice sessions per day. Upgrade to Premium for unlimited access.",
         UNKNOWN_ERROR: "An unexpected error occurred",
       },
       settings: {
@@ -626,6 +629,8 @@ const resources = {
         somethingWentWrong: "Đã xảy ra lỗi khi tải chủ đề.",
         unableToScore: "Không thể chấm điểm câu trả lời của bạn hiện tại. Vui lòng đảm bảo dịch vụ chấm điểm Llama đang chạy.",
         unableToGenerateOutline: "Không thể tạo dàn ý lúc này. Vui lòng thử lại sau vài giây.",
+        limitReached: "Đã đạt giới hạn luyện tập",
+        upgradeToPremium: "Nâng cấp lên Premium",
         suggestedOutlineLabel: "Dàn ý gợi ý",
         audioRecorded: "Đã ghi âm",
         audioConfirmationMessage: "Bản ghi âm của bạn đã sẵn sàng. Bạn có muốn gửi để chấm điểm hay ghi lại?",
@@ -791,6 +796,7 @@ const resources = {
         SERVER_003: "Lỗi kết nối cơ sở dữ liệu",
         NETWORK_001: "Kết nối mạng thất bại",
         NETWORK_002: "Hết thời gian chờ yêu cầu",
+        BIZ_006: "Người dùng miễn phí bị giới hạn 5 phiên luyện tập mỗi ngày. Nâng cấp lên Premium để có quyền truy cập không giới hạn.",
         UNKNOWN_ERROR: "Đã xảy ra lỗi không mong muốn",
       },
       settings: {
