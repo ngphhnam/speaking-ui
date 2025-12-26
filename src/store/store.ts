@@ -20,6 +20,7 @@ import { speakingSessionApi } from "@/store/api/speakingSessionApi";
 import { userDraftsApi } from "@/store/api/userDraftsApi";
 import { adminApi } from "@/store/api/adminApi";
 import { healthApi } from "@/store/api/healthApi";
+import { paymentApi } from "@/store/api/paymentApi";
 
 export const makeStore = () =>
   configureStore({
@@ -45,6 +46,7 @@ export const makeStore = () =>
       [userDraftsApi.reducerPath]: userDraftsApi.reducer,
       [adminApi.reducerPath]: adminApi.reducer,
       [healthApi.reducerPath]: healthApi.reducer,
+      [paymentApi.reducerPath]: paymentApi.reducer,
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware().concat(
@@ -67,7 +69,8 @@ export const makeStore = () =>
         speakingSessionApi.middleware,
         userDraftsApi.middleware,
         adminApi.middleware,
-        healthApi.middleware
+        healthApi.middleware,
+        paymentApi.middleware
       ),
     devTools: process.env.NODE_ENV !== "production",
   });

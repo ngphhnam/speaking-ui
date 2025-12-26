@@ -27,6 +27,7 @@ import ScoringLoadingModal from "./ScoringLoadingModal";
 import RecordingsHistoryModal from "./RecordingsHistoryModal";
 import { Modal } from "@/components/ui/modal";
 import { useAppSelector } from "@/store/hooks";
+import { getErrorMessage, isErrorCode } from "@/utils/errorHandler";
 
 type TopicDetailProps = {
   topicId: string;
@@ -247,6 +248,8 @@ export default function TopicDetail({ topicId, questionPartNumber }: TopicDetail
     questionId: string;
     questionText: string;
   } | null>(null);
+  const [showLimitReachedModal, setShowLimitReachedModal] = useState(false);
+  const [limitReachedMessage, setLimitReachedMessage] = useState<string>("");
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -512,6 +515,16 @@ export default function TopicDetail({ topicId, questionPartNumber }: TopicDetail
         [questionId]: result,
       }));
     } catch (error: any) {
+      // Check if it's a practice session limit error (BIZ_006)
+      if (isErrorCode(error, "BIZ_006")) {
+        const errorMessage = getErrorMessage(error, t);
+        setLimitReachedMessage(errorMessage);
+        setShowLimitReachedModal(true);
+        // Don't set score result for limit errors
+        return;
+      }
+
+      // Handle other errors
       setScoreResultByQuestion((prev) => ({
         ...prev,
         [questionId]: {
@@ -930,6 +943,61 @@ export default function TopicDetail({ topicId, questionPartNumber }: TopicDetail
         isSubmitting={currentConfirmationQuestionId ? isScoringByQuestion[currentConfirmationQuestionId] ?? false : false}
       />
       <ScoringLoadingModal isOpen={isAnyScoring} />
+      
+      {/* Practice Limit Reached Modal */}
+      <Modal
+        isOpen={showLimitReachedModal}
+        onClose={() => setShowLimitReachedModal(false)}
+        className="p-6"
+      >
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-warning-100 dark:bg-warning-900/30">
+              <svg
+                className="h-6 w-6 text-warning-600 dark:text-warning-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              {t("topics.limitReached", "Practice Limit Reached")}
+            </h2>
+          </div>
+          
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            {limitReachedMessage}
+          </p>
+          
+          <div className="flex gap-3 pt-2">
+            <Button
+              onClick={() => setShowLimitReachedModal(false)}
+              variant="outline"
+              className="flex-1"
+            >
+              {t("topics.cancel", "Cancel")}
+            </Button>
+            <Button
+              onClick={() => {
+                setShowLimitReachedModal(false);
+                // Navigate to upgrade page if exists, or settings
+                window.location.href = "/settings";
+              }}
+              className="flex-1"
+            >
+              {t("topics.upgradeToPremium", "Upgrade to Premium")}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+      
       <RecordingsHistoryModal
         isOpen={recordingsHistoryModal !== null}
         onClose={() => setRecordingsHistoryModal(null)}

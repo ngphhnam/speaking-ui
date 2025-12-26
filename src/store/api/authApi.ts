@@ -18,7 +18,7 @@ const API_BASE_URL =
 
 export const authApi = createApi({
   reducerPath: "authApi",
-
+  tagTypes: ["Auth"],
   baseQuery: fetchBaseQuery({
     baseUrl: API_BASE_URL,
     credentials: "include",
@@ -89,19 +89,28 @@ export const authApi = createApi({
       transformResponse: (
         response: ApiResponse<AuthResponse["user"]>
       ) => response.data,
+      providesTags: ["Auth"],
     }),
     logout: builder.mutation<{ message: string }, RefreshTokenRequest | void>({
-      query: (payload) => ({
-        url: "/api/auth/logout",
-        method: "POST",
-        body: payload ?? null,
-      }),
-      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+      query: (payload) => {
+        // RTK Query cannot serialize null, so we don't send body if payload is undefined
+        const body = payload !== undefined ? payload : undefined;
+        return {
+          url: "/api/auth/logout",
+          method: "POST",
+          ...(body !== undefined && { body }),
+        };
+      },
+      invalidatesTags: ["Auth"],
+      async onQueryStarted(_, { dispatch, queryFulfilled, getState }) {
         try {
           await queryFulfilled;
         } finally {
+          // Clear credentials first
           dispatch(clearCredentials());
           clearAuthSession();
+          // Reset all queries in authApi to clear cache
+          dispatch(authApi.util.resetApiState());
         }
       },
     }),
