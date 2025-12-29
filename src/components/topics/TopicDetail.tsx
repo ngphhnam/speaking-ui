@@ -25,6 +25,7 @@ import RecordingModal from "./RecordingModal";
 import AudioConfirmationModal from "./AudioConfirmationModal";
 import ScoringLoadingModal from "./ScoringLoadingModal";
 import RecordingsHistoryModal from "./RecordingsHistoryModal";
+import StreakNotificationModal from "./StreakNotificationModal";
 import { Modal } from "@/components/ui/modal";
 import { useAppSelector } from "@/store/hooks";
 import { getErrorMessage, isErrorCode } from "@/utils/errorHandler";
@@ -250,6 +251,7 @@ export default function TopicDetail({ topicId, questionPartNumber }: TopicDetail
   } | null>(null);
   const [showLimitReachedModal, setShowLimitReachedModal] = useState(false);
   const [limitReachedMessage, setLimitReachedMessage] = useState<string>("");
+  const [streakData, setStreakData] = useState<import("@/store/api/answerApi").StreakData | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -514,6 +516,11 @@ export default function TopicDetail({ topicId, questionPartNumber }: TopicDetail
         ...prev,
         [questionId]: result,
       }));
+
+      // Show streak notification if streak data is present
+      if (result.streak && (result.streak.isNewRecord || result.streak.streakContinued || result.streak.streakRecovered)) {
+        setStreakData(result.streak);
+      }
     } catch (error: any) {
       // Check if it's a practice session limit error (BIZ_006)
       if (isErrorCode(error, "BIZ_006")) {
@@ -1004,6 +1011,14 @@ export default function TopicDetail({ topicId, questionPartNumber }: TopicDetail
         questionId={recordingsHistoryModal?.questionId ?? ""}
         questionText={recordingsHistoryModal?.questionText ?? ""}
       />
+      
+      {streakData && (
+        <StreakNotificationModal
+          isOpen={!!streakData}
+          onClose={() => setStreakData(null)}
+          streak={streakData}
+        />
+      )}
       {/* Generate Options Modal */}
       <Modal
         isOpen={generateModalOpen !== null}
@@ -1437,10 +1452,10 @@ export default function TopicDetail({ topicId, questionPartNumber }: TopicDetail
 
                           {/* Generating Answer Status */}
                           {isGeneratingAnswer && !generatedAnswer && (
-                            <div className="rounded-lg border border-blue-200 bg-blue-50/60 p-4 text-xs dark:border-blue-800/40 dark:bg-blue-900/20">
-                              <div className="flex items-center gap-2">
-                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent dark:border-blue-400"></div>
-                                <p className="font-semibold text-blue-800 dark:text-blue-200">
+                            <div className="rounded-lg border border-blue-200 bg-blue-50/60 p-6 text-base dark:border-blue-800/40 dark:bg-blue-900/20">
+                              <div className="flex items-center gap-3">
+                                <div className="h-5 w-5 animate-spin rounded-full border-2 border-blue-600 border-t-transparent dark:border-blue-400"></div>
+                                <p className="text-base font-semibold text-blue-800 dark:text-blue-200">
                                   {t("topics.generatingAnswer", "Generating...")}
                                 </p>
                               </div>
@@ -1449,22 +1464,22 @@ export default function TopicDetail({ topicId, questionPartNumber }: TopicDetail
 
                           {/* Generated Answer */}
                           {generatedAnswer && (
-                            <div className="rounded-lg border border-blue-200 bg-blue-50/60 p-4 text-xs dark:border-blue-800/40 dark:bg-blue-900/20">
-                              <p className="mb-2 font-semibold text-blue-800 dark:text-blue-200">
+                            <div className="rounded-lg border border-blue-200 bg-blue-50/60 p-6 text-base dark:border-blue-800/40 dark:bg-blue-900/20">
+                              <p className="mb-4 text-lg font-semibold text-blue-800 dark:text-blue-200">
                                 {t("topics.generatedAnswer", "Generated Sample Answer")} (Band {targetBand})
                               </p>
-                              <div className="rounded-md border border-blue-200 bg-white p-3 text-gray-800 dark:border-blue-800 dark:bg-gray-900 dark:text-gray-100">
-                                <p className="leading-relaxed text-[11px] whitespace-pre-wrap">{generatedAnswer}</p>
+                              <div className="rounded-md border border-blue-200 bg-white p-5 text-gray-800 dark:border-blue-800 dark:bg-gray-900 dark:text-gray-100">
+                                <p className="leading-relaxed text-base whitespace-pre-wrap">{generatedAnswer}</p>
                               </div>
                             </div>
                           )}
 
                           {/* Generating Structures Status */}
                           {isGeneratingStructures && generatedStructures.length === 0 && (
-                            <div className="rounded-lg border border-purple-200 bg-purple-50/60 p-4 text-xs dark:border-purple-800/40 dark:bg-purple-900/20">
-                              <div className="flex items-center gap-2">
-                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-purple-600 border-t-transparent dark:border-purple-400"></div>
-                                <p className="font-semibold text-purple-800 dark:text-purple-200">
+                            <div className="rounded-lg border border-purple-200 bg-purple-50/60 p-6 text-base dark:border-purple-800/40 dark:bg-purple-900/20">
+                              <div className="flex items-center gap-3">
+                                <div className="h-5 w-5 animate-spin rounded-full border-2 border-purple-600 border-t-transparent dark:border-purple-400"></div>
+                                <p className="text-base font-semibold text-purple-800 dark:text-purple-200">
                                   {t("topics.generatingStructures", "Generating...")}
                                 </p>
                               </div>
@@ -1473,24 +1488,24 @@ export default function TopicDetail({ topicId, questionPartNumber }: TopicDetail
 
                           {/* Generated Structures */}
                           {generatedStructures.length > 0 && (
-                            <div className="rounded-lg border border-purple-200 bg-purple-50/60 p-4 text-xs dark:border-purple-800/40 dark:bg-purple-900/20">
-                              <p className="mb-3 font-semibold text-purple-800 dark:text-purple-200">
+                            <div className="rounded-lg border border-purple-200 bg-purple-50/60 p-6 text-base dark:border-purple-800/40 dark:bg-purple-900/20">
+                              <p className="mb-4 text-lg font-semibold text-purple-800 dark:text-purple-200">
                                 {t("topics.generatedStructures", "Generated Structures")} (Band {targetBand})
                               </p>
-                              <div className="space-y-3">
+                              <div className="space-y-4">
                                 {generatedStructures.map((structure, index) => (
                                   <div
                                     key={index}
-                                    className="rounded-md border border-purple-200 bg-white p-3 text-gray-800 dark:border-purple-800 dark:bg-gray-900 dark:text-gray-100"
+                                    className="rounded-md border border-purple-200 bg-white p-5 text-gray-800 dark:border-purple-800 dark:bg-gray-900 dark:text-gray-100"
                                   >
-                                    <p className="mb-1 text-[10px] font-medium text-purple-700 dark:text-purple-300">
+                                    <p className="mb-2 text-sm font-medium text-purple-700 dark:text-purple-300">
                                       {t("topics.structure", "Structure")} {index + 1}:
                                     </p>
-                                    <p className="mb-2 text-[11px] font-semibold">{structure.pattern}</p>
-                                    <p className="mb-2 text-[11px] italic text-gray-600 dark:text-gray-400">
+                                    <p className="mb-3 text-base font-semibold leading-relaxed">{structure.pattern}</p>
+                                    <p className="mb-3 text-base italic text-gray-600 dark:text-gray-400 leading-relaxed">
                                       {t("topics.example", "Example")}: {structure.example}
                                     </p>
-                                    <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                                    <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
                                       {structure.usage}
                                     </p>
                                   </div>
@@ -1501,10 +1516,10 @@ export default function TopicDetail({ topicId, questionPartNumber }: TopicDetail
 
                           {/* Generating Vocabulary Status */}
                           {isGeneratingVocabulary && generatedVocabulary.length === 0 && (
-                            <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-4 text-xs dark:border-amber-800/40 dark:bg-amber-900/20">
-                              <div className="flex items-center gap-2">
-                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-amber-600 border-t-transparent dark:border-amber-400"></div>
-                                <p className="font-semibold text-amber-800 dark:text-amber-200">
+                            <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-6 text-base dark:border-amber-800/40 dark:bg-amber-900/20">
+                              <div className="flex items-center gap-3">
+                                <div className="h-5 w-5 animate-spin rounded-full border-2 border-amber-600 border-t-transparent dark:border-amber-400"></div>
+                                <p className="text-base font-semibold text-amber-800 dark:text-amber-200">
                                   {t("topics.generatingVocabulary", "Generating...")}
                                 </p>
                               </div>
@@ -1513,28 +1528,28 @@ export default function TopicDetail({ topicId, questionPartNumber }: TopicDetail
 
                           {/* Generated Vocabulary */}
                           {generatedVocabulary.length > 0 && (
-                            <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-4 text-xs dark:border-amber-800/40 dark:bg-amber-900/20">
-                              <p className="mb-3 font-semibold text-amber-800 dark:text-amber-200">
+                            <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-6 text-base dark:border-amber-800/40 dark:bg-amber-900/20">
+                              <p className="mb-4 text-lg font-semibold text-amber-800 dark:text-amber-200">
                                 {t("topics.generatedVocabulary", "Generated Vocabulary")} (Band {targetBand})
                               </p>
-                              <div className="space-y-3">
+                              <div className="space-y-4">
                                 {generatedVocabulary.map((vocab, index) => (
                                   <div
                                     key={index}
-                                    className="rounded-md border border-amber-200 bg-white p-3 text-gray-800 dark:border-amber-800 dark:bg-gray-900 dark:text-gray-100"
+                                    className="rounded-md border border-amber-200 bg-white p-5 text-gray-800 dark:border-amber-800 dark:bg-gray-900 dark:text-gray-100"
                                   >
-                                    <div className="mb-1 flex items-center justify-between">
-                                      <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-300">
+                                    <div className="mb-2 flex items-center justify-between">
+                                      <p className="text-lg font-semibold text-amber-700 dark:text-amber-300">
                                         {vocab.word}
                                       </p>
-                                      <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                                      <p className="text-sm text-gray-500 dark:text-gray-400">
                                         {vocab.pronunciation}
                                       </p>
                                     </div>
-                                    <p className="mb-2 text-[11px] text-gray-700 dark:text-gray-300">
+                                    <p className="mb-3 text-base text-gray-700 dark:text-gray-300 leading-relaxed">
                                       {vocab.definition}
                                     </p>
-                                    <p className="text-[10px] italic text-gray-600 dark:text-gray-400">
+                                    <p className="text-sm italic text-gray-600 dark:text-gray-400 leading-relaxed">
                                       {t("topics.example", "Example")}: {vocab.example}
                                     </p>
                                   </div>

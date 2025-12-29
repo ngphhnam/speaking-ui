@@ -81,10 +81,10 @@ export default function SkillsRadar({ statistics }: SkillsRadarProps) {
     {
       name: t("dashboard.score", "Điểm"),
       data: [
-        statistics.scoresBySkill.fluency,
-        statistics.scoresBySkill.vocabulary,
-        statistics.scoresBySkill.grammar,
-        statistics.scoresBySkill.pronunciation,
+        statistics.scoresBySkill.fluency ?? 0,
+        statistics.scoresBySkill.vocabulary ?? 0,
+        statistics.scoresBySkill.grammar ?? 0,
+        statistics.scoresBySkill.pronunciation ?? 0,
       ],
     },
   ];
@@ -103,7 +103,7 @@ export default function SkillsRadar({ statistics }: SkillsRadarProps) {
             {t("dashboard.fluency", "Lưu loát")}
           </p>
           <p className="mt-1 text-lg font-bold text-gray-900 dark:text-white">
-            {statistics.scoresBySkill.fluency.toFixed(1)}
+            {statistics.scoresBySkill.fluency?.toFixed(1) ?? "—"}
           </p>
         </div>
         <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800/50">
@@ -111,7 +111,7 @@ export default function SkillsRadar({ statistics }: SkillsRadarProps) {
             {t("dashboard.vocabulary", "Từ vựng")}
           </p>
           <p className="mt-1 text-lg font-bold text-gray-900 dark:text-white">
-            {statistics.scoresBySkill.vocabulary.toFixed(1)}
+            {statistics.scoresBySkill.vocabulary?.toFixed(1) ?? "—"}
           </p>
         </div>
         <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800/50">
@@ -119,7 +119,7 @@ export default function SkillsRadar({ statistics }: SkillsRadarProps) {
             {t("dashboard.grammar", "Ngữ pháp")}
           </p>
           <p className="mt-1 text-lg font-bold text-gray-900 dark:text-white">
-            {statistics.scoresBySkill.grammar.toFixed(1)}
+            {statistics.scoresBySkill.grammar?.toFixed(1) ?? "—"}
           </p>
         </div>
         <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800/50">
@@ -127,13 +127,15 @@ export default function SkillsRadar({ statistics }: SkillsRadarProps) {
             {t("dashboard.pronunciation", "Phát âm")}
           </p>
           <p className="mt-1 text-lg font-bold text-gray-900 dark:text-white">
-            {statistics.scoresBySkill.pronunciation.toFixed(1)}
+            {statistics.scoresBySkill.pronunciation?.toFixed(1) ?? "—"}
           </p>
         </div>
       </div>
     </div>
   );
 }
+
+
 
 
 

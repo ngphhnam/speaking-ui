@@ -8,31 +8,28 @@ export interface AchievementDto {
   id: string;
   title: string;
   description: string;
-  achievementType: "milestone" | "streak" | "score" | "practice" | "special";
-  requirementCriteria: string;
+  achievementType: "practice_streak" | "total_questions" | "score_milestone" | "total_practice_days";
   points: number;
   badgeIconUrl: string | null;
   isActive: boolean;
   createdAt: string;
-  updatedAt: string;
 }
 
 export interface UserAchievementDto {
   id: string;
   userId: string;
   achievementId: string;
-  progress: number;
+  achievement: AchievementDto;
+  progress: number | null;
   isCompleted: boolean;
-  completedAt: string | null;
-  earnedPoints: number;
-  achievement?: AchievementDto;
+  earnedAt: string | null;
+  createdAt: string;
 }
 
 export interface CreateAchievementRequest {
   title: string;
   description: string;
-  achievementType: "milestone" | "streak" | "score" | "practice" | "special";
-  requirementCriteria: string;
+  achievementType: "practice_streak" | "total_questions" | "score_milestone" | "total_practice_days";
   points: number;
   badgeIconUrl?: string;
 }
@@ -40,8 +37,7 @@ export interface CreateAchievementRequest {
 export interface UpdateAchievementRequest {
   title?: string;
   description?: string;
-  achievementType?: "milestone" | "streak" | "score" | "practice" | "special";
-  requirementCriteria?: string;
+  achievementType?: "practice_streak" | "total_questions" | "score_milestone" | "total_practice_days";
   points?: number;
   badgeIconUrl?: string;
   isActive?: boolean;
@@ -163,7 +159,7 @@ export const achievementApi = createApi({
       invalidatesTags: ["Achievement"],
     }),
     getUserAchievements: builder.query<UserAchievementDto[], string>({
-      query: (userId) => `/api/userachievements/user/${userId}`,
+      query: (userId) => `/api/user-achievements/user/${userId}`,
       transformResponse: (response: ApiResponse<UserAchievementDto[]>) =>
         response.data ?? [],
       providesTags: (result, error, userId) => [
@@ -171,7 +167,7 @@ export const achievementApi = createApi({
       ],
     }),
     getCompletedAchievements: builder.query<UserAchievementDto[], string>({
-      query: (userId) => `/api/userachievements/user/${userId}/completed`,
+      query: (userId) => `/api/user-achievements/user/${userId}/completed`,
       transformResponse: (response: ApiResponse<UserAchievementDto[]>) =>
         response.data ?? [],
       providesTags: (result, error, userId) => [
@@ -179,7 +175,7 @@ export const achievementApi = createApi({
       ],
     }),
     getInProgressAchievements: builder.query<UserAchievementDto[], string>({
-      query: (userId) => `/api/userachievements/user/${userId}/in-progress`,
+      query: (userId) => `/api/user-achievements/user/${userId}/in-progress`,
       transformResponse: (response: ApiResponse<UserAchievementDto[]>) =>
         response.data ?? [],
       providesTags: (result, error, userId) => [
@@ -202,6 +198,8 @@ export const {
   useGetCompletedAchievementsQuery,
   useGetInProgressAchievementsQuery,
 } = achievementApi;
+
+
 
 
 
