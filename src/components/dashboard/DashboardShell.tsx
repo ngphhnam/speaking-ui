@@ -2,7 +2,9 @@
 
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { useGetUserStatisticsQuery, type UserStatistics } from "@/store/api/statisticsApi";
+import { useSelector } from "react-redux";
+import { useGetAllUserStatisticsQuery } from "@/store/api/statisticsApi";
+import type { RootState } from "@/store/store";
 import DashboardMetrics from "./DashboardMetrics";
 import ProgressChart from "./ProgressChart";
 import SkillsRadar from "./SkillsRadar";
@@ -11,111 +13,49 @@ import RecentActivity from "./RecentActivity";
 import StreakCard from "./StreakCard";
 import Link from "next/link";
 
-// Dữ liệu mẫu khi API lỗi
-const getMockStatistics = (): UserStatistics => {
-  const now = new Date();
-  const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const twoMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 2, 1);
-  const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
-
-  return {
-    totalQuestions: 156,
-    totalRecordings: 42,
-    averageScore: 6.8,
-    totalPracticeTime: 1240, // phút
-    streakDays: 7,
-    lastPracticeDate: new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString(), // 2 giờ trước
-    scoresBySkill: {
-      fluency: 6.5,
-      vocabulary: 7.2,
-      grammar: 6.8,
-      pronunciation: 6.9,
-    },
-    progressByMonth: [
-      {
-        month: threeMonthsAgo.toLocaleDateString("vi-VN", { month: "short", year: "numeric" }),
-        averageScore: 5.8,
-        totalRecordings: 8,
-      },
-      {
-        month: twoMonthsAgo.toLocaleDateString("vi-VN", { month: "short", year: "numeric" }),
-        averageScore: 6.2,
-        totalRecordings: 12,
-      },
-      {
-        month: lastMonth.toLocaleDateString("vi-VN", { month: "short", year: "numeric" }),
-        averageScore: 6.5,
-        totalRecordings: 15,
-      },
-      {
-        month: now.toLocaleDateString("vi-VN", { month: "short", year: "numeric" }),
-        averageScore: 6.8,
-        totalRecordings: 7,
-      },
-    ],
-    weakTopics: [
-      {
-        topicId: "1",
-        topicTitle: "Work & Career",
-        averageScore: 5.2,
-        totalAttempts: 5,
-      },
-      {
-        topicId: "2",
-        topicTitle: "Environment",
-        averageScore: 5.8,
-        totalAttempts: 3,
-      },
-      {
-        topicId: "3",
-        topicTitle: "Technology",
-        averageScore: 6.1,
-        totalAttempts: 4,
-      },
-    ],
-    recentRecordings: [
-      {
-        id: "1",
-        questionId: "q1",
-        questionText: "Describe a time when you had to solve a difficult problem.",
-        recordedAt: new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString(),
-        overallScore: 7.2,
-      },
-      {
-        id: "2",
-        questionId: "q2",
-        questionText: "What are the advantages and disadvantages of working from home?",
-        recordedAt: new Date(now.getTime() - 5 * 60 * 60 * 1000).toISOString(),
-        overallScore: 6.8,
-      },
-      {
-        id: "3",
-        questionId: "q3",
-        questionText: "How do you think technology will change education in the future?",
-        recordedAt: new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString(),
-        overallScore: 6.5,
-      },
-      {
-        id: "4",
-        questionId: "q4",
-        questionText: "Describe a place you visited that made a strong impression on you.",
-        recordedAt: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-        overallScore: 7.0,
-      },
-      {
-        id: "5",
-        questionId: "q5",
-        questionText: "What role does music play in your life?",
-        recordedAt: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-        overallScore: 6.9,
-      },
-    ],
-  };
-};
-
 export default function DashboardShell() {
   const { t } = useTranslation();
-  const { data: statistics, isLoading, error } = useGetUserStatisticsQuery();
+  const userId = useSelector((state: RootState) => state.auth.user?.id);
+  
+  const { data: statistics, isLoading, error } = useGetAllUserStatisticsQuery(
+    userId || "",
+    { skip: !userId }
+  );
+
+  if (!userId) {
+    return (
+      <div className="space-y-6">
+        <div className="rounded-lg border-2 border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">
+          <div className="flex items-start gap-3">
+            <svg
+              className="h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
+            </svg>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                {t("dashboard.userNotFound", "Người dùng không tìm thấy")}
+              </p>
+              <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
+                {t(
+                  "dashboard.pleaseLogin",
+                  "Vui lòng đăng nhập để xem thống kê của bạn."
+                )}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -134,8 +74,40 @@ export default function DashboardShell() {
     );
   }
 
-  // Sử dụng dữ liệu mẫu nếu API lỗi hoặc không có dữ liệu
-  const displayStatistics: UserStatistics = statistics || getMockStatistics();
+  if (error || !statistics) {
+    return (
+      <div className="space-y-6">
+        <div className="rounded-lg border-2 border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20">
+          <div className="flex items-start gap-3">
+            <svg
+              className="h-5 w-5 flex-shrink-0 text-red-600 dark:text-red-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-red-800 dark:text-red-200">
+                {t("dashboard.loadError", "Không thể tải dữ liệu thống kê")}
+              </p>
+              <p className="mt-1 text-xs text-red-700 dark:text-red-300">
+                {t(
+                  "dashboard.tryAgain",
+                  "Vui lòng thử lại sau hoặc liên hệ hỗ trợ nếu vấn đề vẫn tiếp tục."
+                )}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -173,58 +145,26 @@ export default function DashboardShell() {
         </Link>
       </div>
 
-      {/* Thông báo khi đang dùng dữ liệu mẫu */}
-      {error && (
-        <div className="rounded-lg border-2 border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">
-          <div className="flex items-start gap-3">
-            <svg
-              className="h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-              />
-            </svg>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                {t("dashboard.apiError", "API đang gặp sự cố")}
-              </p>
-              <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
-                {t(
-                  "dashboard.usingMockData",
-                  "Đang hiển thị dữ liệu mẫu để bạn có thể xem giao diện dashboard."
-                )}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Metrics */}
-      <DashboardMetrics statistics={displayStatistics} />
+      <DashboardMetrics statistics={statistics} />
 
       {/* Streak + Skills */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-1">
-          <StreakCard statistics={displayStatistics} />
+          <StreakCard statistics={statistics} />
         </div>
         <div className="lg:col-span-2">
-          <SkillsRadar statistics={displayStatistics} />
+          <SkillsRadar statistics={statistics} />
         </div>
       </div>
 
       {/* Progress Chart */}
-      <ProgressChart statistics={displayStatistics} />
+      <ProgressChart statistics={statistics} />
 
       {/* Weak Topics + Recent Activity */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <WeakTopics statistics={displayStatistics} />
-        <RecentActivity statistics={displayStatistics} />
+        <WeakTopics statistics={statistics} />
+        <RecentActivity statistics={statistics} />
       </div>
 
       {/* Quick Actions */}

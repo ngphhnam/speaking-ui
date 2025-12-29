@@ -15,6 +15,16 @@ export type GrammarCorrection = {
   explanation: string;
 };
 
+export type StreakData = {
+  currentStreak: number;
+  longestStreak: number;
+  totalPracticeDays: number;
+  isNewRecord: boolean;
+  streakContinued: boolean;
+  streakRecovered: boolean;
+  streakBroken: boolean;
+};
+
 export type SubmitAnswerResponse = {
   recordingId: string;
   analysisResultId: string;
@@ -32,6 +42,7 @@ export type SubmitAnswerResponse = {
   grammarCorrection?: GrammarCorrection;
   sampleAnswers?: string[] | null;
   keyVocabulary?: string[] | null;
+  streak?: StreakData;
 };
 
 export type ApiResponseWrapper<T> = {

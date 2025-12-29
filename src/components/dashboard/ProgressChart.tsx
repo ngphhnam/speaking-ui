@@ -19,7 +19,7 @@ export default function ProgressChart({ statistics }: ProgressChartProps) {
 
   const chartData = statistics.progressByMonth.map((item) => ({
     month: item.month,
-    score: item.averageScore,
+    score: item.averageScore ?? 0,
     count: item.totalRecordings,
   }));
 
@@ -129,6 +129,8 @@ export default function ProgressChart({ statistics }: ProgressChartProps) {
     </div>
   );
 }
+
+
 
 
 

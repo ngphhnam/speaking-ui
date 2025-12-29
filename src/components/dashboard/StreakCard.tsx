@@ -11,6 +11,13 @@ type StreakCardProps = {
 export default function StreakCard({ statistics }: StreakCardProps) {
   const { t } = useTranslation();
 
+  // Format date from ISO string to DD/MM/YYYY without timezone conversion
+  const formatDate = (isoString: string) => {
+    const dateStr = isoString.split('T')[0]; // Extract YYYY-MM-DD part
+    const [year, month, day] = dateStr.split('-');
+    return `${day}/${month}/${year}`;
+  };
+
   const getStreakMessage = (days: number) => {
     if (days === 0) {
       return t("dashboard.noStreak", "Bắt đầu chuỗi ngày học của bạn!");
@@ -72,13 +79,15 @@ export default function StreakCard({ statistics }: StreakCardProps) {
             />
           </svg>
           <span>
-            {t("dashboard.lastPractice", "Lần cuối:")} {new Date(statistics.lastPracticeDate).toLocaleDateString("vi-VN")}
+            {t("dashboard.lastPractice", "Lần cuối:")} {formatDate(statistics.lastPracticeDate)}
           </span>
         </div>
       )}
     </div>
   );
 }
+
+
 
 
 

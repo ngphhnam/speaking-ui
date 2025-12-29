@@ -1,11 +1,18 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { useUpdateProfileMutation } from "@/store/api/authApi";
 import { updateUser } from "@/store/authSlice";
 import { getErrorMessage } from "@/utils/errorHandler";
+import {
+  useGetAllAchievementsQuery,
+  useGetCompletedAchievementsQuery,
+  useGetInProgressAchievementsQuery,
+  type AchievementDto,
+  type UserAchievementDto,
+} from "@/store/api/achievementApi";
 import Link from "next/link";
 import AvatarUpload from "@/components/ui/avatar/AvatarUpload";
 import DatePicker from "@/components/form/date-picker";
@@ -28,6 +35,17 @@ export default function MyProfileShell() {
     bio: user?.bio || "",
     examDate: user?.examDate || "",
   });
+
+  // Fetch achievements
+  const { data: allAchievements = [], isLoading: isLoadingAchievements } = useGetAllAchievementsQuery();
+  const { data: completedAchievements = [] } = useGetCompletedAchievementsQuery(
+    user?.id || "",
+    { skip: !user?.id }
+  );
+  const { data: inProgressAchievements = [] } = useGetInProgressAchievementsQuery(
+    user?.id || "",
+    { skip: !user?.id }
+  );
 
   // Update formData when user data changes
   useEffect(() => {
@@ -72,36 +90,74 @@ export default function MyProfileShell() {
     }
   };
 
-  const achievements = [
-    {
-      icon: "🔥",
-      title: t("profile.streak7Days", "7 ngày liên tiếp"),
-      description: t("profile.streak7DaysDesc", "Luyện tập 7 ngày liên tục"),
-      earned: true,
-      date: "2025-12-01",
-    },
-    {
-      icon: "⭐",
-      title: t("profile.firstTest", "Bài thi đầu tiên"),
-      description: t("profile.firstTestDesc", "Hoàn thành bài thi thử đầu tiên"),
-      earned: true,
-      date: "2025-11-28",
-    },
-    {
-      icon: "🏆",
-      title: t("profile.score7Plus", "Điểm 7.0+"),
-      description: t("profile.score7PlusDesc", "Đạt điểm 7.0 trở lên"),
-      earned: false,
-      date: null,
-    },
-    {
-      icon: "💯",
-      title: t("profile.complete100", "100 bài làm"),
-      description: t("profile.complete100Desc", "Hoàn thành 100 bài luyện tập"),
-      earned: false,
-      date: null,
-    },
-  ];
+  // Merge achievements with user progress
+  const achievementsWithStatus = useMemo(() => {
+    if (!allAchievements.length) return [];
+
+    // Create maps for quick lookup
+    const completedMap = new Map<string, UserAchievementDto>();
+    completedAchievements.forEach((ua) => {
+      completedMap.set(ua.achievementId, ua);
+    });
+
+    const inProgressMap = new Map<string, UserAchievementDto>();
+    inProgressAchievements.forEach((ua) => {
+      inProgressMap.set(ua.achievementId, ua);
+    });
+
+    // Map all achievements with status
+    return allAchievements.map((achievement) => {
+      const completed = completedMap.get(achievement.id);
+      const inProgress = inProgressMap.get(achievement.id);
+      
+      return {
+        ...achievement,
+        earned: !!completed,
+        earnedAt: completed?.earnedAt || null,
+        progress: inProgress?.progress || completed?.progress || null,
+      };
+    });
+  }, [allAchievements, completedAchievements, inProgressAchievements]);
+
+  // Group achievements by type
+  const groupedAchievements = useMemo(() => {
+    const groups: Record<string, typeof achievementsWithStatus> = {
+      practice_streak: [],
+      total_questions: [],
+      score_milestone: [],
+      total_practice_days: [],
+    };
+
+    achievementsWithStatus.forEach((achievement) => {
+      if (groups[achievement.achievementType]) {
+        groups[achievement.achievementType].push(achievement);
+      }
+    });
+
+    return groups;
+  }, [achievementsWithStatus]);
+
+  const getAchievementTypeLabel = (type: string) => {
+    switch (type) {
+      case "practice_streak":
+        return t("achievements.practiceStreak", "Chuỗi ngày học");
+      case "total_questions":
+        return t("achievements.totalQuestions", "Tổng câu hỏi");
+      case "score_milestone":
+        return t("achievements.scoreMilestone", "Mốc điểm số");
+      case "total_practice_days":
+        return t("achievements.totalPracticeDays", "Tổng ngày luyện tập");
+      default:
+        return type;
+    }
+  };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return null;
+    const date = dateString.split('T')[0];
+    const [year, month, day] = date.split('-');
+    return `${day}/${month}/${year}`;
+  };
 
   return (
     <div className="space-y-6">
@@ -315,38 +371,121 @@ export default function MyProfileShell() {
 
           {/* Achievements */}
           <div className="rounded-xl border-2 border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-            <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">
-              {t("profile.achievements", "Thành tích")}
-            </h2>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {achievements.map((achievement, index) => (
-                <div
-                  key={index}
-                  className={`rounded-lg border-2 p-4 transition ${
-                    achievement.earned
-                      ? "border-brand-200 bg-brand-50 dark:border-brand-800 dark:bg-brand-900/20"
-                      : "border-gray-200 bg-gray-50 opacity-60 dark:border-gray-800 dark:bg-gray-800/50"
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="text-3xl">{achievement.icon}</div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 dark:text-white">
-                        {achievement.title}
-                      </h3>
-                      <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
-                        {achievement.description}
-                      </p>
-                      {achievement.earned && achievement.date && (
-                        <p className="mt-2 text-xs text-brand-600 dark:text-brand-400">
-                          {t("profile.earnedOn", "Đạt được:")} {achievement.date}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                {t("profile.achievements", "Thành tích")}
+              </h2>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                {completedAchievements.length} / {allAchievements.length} {t("profile.completed", "đã hoàn thành")}
+              </div>
             </div>
+
+            {isLoadingAchievements ? (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {[1, 2, 3, 4].map((i) => (
+                  <div
+                    key={i}
+                    className="h-24 animate-pulse rounded-lg bg-gray-200 dark:bg-gray-700"
+                  />
+                ))}
+              </div>
+            ) : achievementsWithStatus.length === 0 ? (
+              <div className="py-8 text-center">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {t("profile.noAchievements", "Chưa có thành tích nào")}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {Object.entries(groupedAchievements).map(([type, achievements]) => {
+                  if (achievements.length === 0) return null;
+                  
+                  return (
+                    <div key={type}>
+                      <h3 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        {getAchievementTypeLabel(type)}
+                      </h3>
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        {achievements.map((achievement) => (
+                          <div
+                            key={achievement.id}
+                            className={`rounded-lg border-2 p-4 transition ${
+                              achievement.earned
+                                ? "border-brand-200 bg-brand-50 dark:border-brand-800 dark:bg-brand-900/20"
+                                : "border-gray-200 bg-gray-50 opacity-60 dark:border-gray-800 dark:bg-gray-800/50"
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              {achievement.badgeIconUrl ? (
+                                <img
+                                  src={achievement.badgeIconUrl}
+                                  alt={achievement.title}
+                                  className="h-12 w-12 flex-shrink-0 rounded-lg object-cover"
+                                  onError={(e) => {
+                                    // Hide image on error, show emoji fallback
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = 'none';
+                                    const parent = target.parentElement;
+                                    if (parent) {
+                                      const emoji = parent.querySelector('.emoji-fallback') as HTMLElement;
+                                      if (emoji) emoji.style.display = 'block';
+                                    }
+                                  }}
+                                />
+                              ) : null}
+                              <div className={`text-3xl emoji-fallback ${achievement.badgeIconUrl ? 'hidden' : 'block'}`}>
+                                {achievement.achievementType === "practice_streak" && "🔥"}
+                                {achievement.achievementType === "total_questions" && "📝"}
+                                {achievement.achievementType === "score_milestone" && "⭐"}
+                                {achievement.achievementType === "total_practice_days" && "📅"}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-2">
+                                  <h3 className="font-semibold text-gray-900 dark:text-white">
+                                    {achievement.title}
+                                  </h3>
+                                  {achievement.earned && (
+                                    <span className="flex-shrink-0 text-xs font-medium text-brand-600 dark:text-brand-400">
+                                      +{achievement.points} {t("profile.points", "điểm")}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                                  {achievement.description}
+                                </p>
+                                {achievement.earned && achievement.earnedAt && (
+                                  <p className="mt-2 text-xs text-brand-600 dark:text-brand-400">
+                                    {t("profile.earnedOn", "Đạt được:")} {formatDate(achievement.earnedAt)}
+                                  </p>
+                                )}
+                                {!achievement.earned && achievement.progress !== null && (
+                                  <div className="mt-2">
+                                    <div className="mb-1 flex items-center justify-between text-xs">
+                                      <span className="text-gray-600 dark:text-gray-400">
+                                        {t("profile.progress", "Tiến độ")}
+                                      </span>
+                                      <span className="text-gray-600 dark:text-gray-400">
+                                        {Math.round(achievement.progress)}%
+                                      </span>
+                                    </div>
+                                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+                                      <div
+                                        className="h-full bg-brand-600 transition-all dark:bg-brand-500"
+                                        style={{ width: `${Math.min(achievement.progress, 100)}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 
