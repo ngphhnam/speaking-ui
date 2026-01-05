@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useGetUserStatisticsQuery } from "@/store/api/statisticsApi";
 import { useGetAllSessionsQuery } from "@/store/api/speakingSessionApi";
 import { useAppSelector } from "@/store/hooks";
+import { skipToken } from "@reduxjs/toolkit/query";
 
 export default function LearningHistoryShell() {
   const { t } = useTranslation();
@@ -15,19 +16,19 @@ export default function LearningHistoryShell() {
   const [pageNum, setPageNum] = useState(1);
   const pageSize = 5;
 
+  const userId = user?.id ?? "";
+
   const { data: statistics, isLoading: isLoadingStats } =
-    useGetUserStatisticsQuery();
+    useGetUserStatisticsQuery(userId, {
+      skip: !userId,
+    });
 
   const {
     data: sessionsPage,
     isLoading: isLoadingSessions,
     isFetching: isFetchingSessions,
   } = useGetAllSessionsQuery(
-    user
-      ? { userId: user.id, pageNum, pageSize }
-      : // if user chưa sẵn sàng, không gọi API
-        // @ts-expect-error RTK Query will handle undefined gracefully in runtime
-        undefined
+    userId ? { userId, pageNum, pageSize } : skipToken
   );
 
   const sessions = sessionsPage?.items ?? [];

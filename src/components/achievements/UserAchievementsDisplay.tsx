@@ -31,10 +31,9 @@ const UserAchievementsDisplay: React.FC = () => {
     { skip: !userId }
   );
 
-  const totalPoints = completedAchievements.reduce(
-    (sum, ua) => sum + ua.earnedPoints,
-    0
-  );
+  const totalPoints = completedAchievements.reduce((sum, ua) => {
+    return sum + (ua.achievement?.points ?? 0);
+  }, 0);
 
   const getFilteredAchievements = () => {
     if (filterStatus === "completed") {
@@ -232,7 +231,7 @@ const UserAchievementsDisplay: React.FC = () => {
                             Tiến độ
                           </span>
                           <span className="font-medium text-gray-900 dark:text-white">
-                            {userAchievement.progress}%
+                            {(userAchievement.progress ?? 0)}%
                           </span>
                         </div>
                         <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
@@ -256,10 +255,10 @@ const UserAchievementsDisplay: React.FC = () => {
                         </svg>
                         {achievement.points} điểm
                       </span>
-                      {userAchievement.completedAt && (
+                      {userAchievement.earnedAt && (
                         <span className="text-gray-600 dark:text-gray-400">
                           Đạt được:{" "}
-                          {new Date(userAchievement.completedAt).toLocaleDateString(
+                          {new Date(userAchievement.earnedAt).toLocaleDateString(
                             "vi-VN"
                           )}
                         </span>

@@ -36,15 +36,18 @@ const AchievementFormModal: React.FC<AchievementFormModalProps> = ({
   const [uploadBadgeIcon, { isLoading: isUploading }] =
     useUploadBadgeIconMutation();
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    title: string;
+    description: string;
+    achievementType: AchievementDto["achievementType"];
+    requirementCriteria: string;
+    points: number;
+    badgeIconUrl: string;
+    isActive: boolean;
+  }>({
     title: "",
     description: "",
-    achievementType: "milestone" as
-      | "milestone"
-      | "streak"
-      | "score"
-      | "practice"
-      | "special",
+    achievementType: "practice_streak",
     requirementCriteria: "",
     points: 10,
     badgeIconUrl: "",
@@ -60,22 +63,23 @@ const AchievementFormModal: React.FC<AchievementFormModalProps> = ({
         title: achievement.title,
         description: achievement.description,
         achievementType: achievement.achievementType,
-        requirementCriteria: achievement.requirementCriteria,
+        requirementCriteria: achievement.requirementCriteria ?? "",
         points: achievement.points,
         badgeIconUrl: achievement.badgeIconUrl || "",
         isActive: achievement.isActive,
       });
       setBadgePreview(achievement.badgeIconUrl);
     } else {
-      setFormData({
+      setFormData((prev) => ({
+        ...prev,
         title: "",
         description: "",
-        achievementType: "milestone",
+        achievementType: "practice_streak",
         requirementCriteria: "",
         points: 10,
         badgeIconUrl: "",
         isActive: true,
-      });
+      }));
       setBadgePreview(null);
     }
     setError(null);
@@ -273,7 +277,6 @@ const AchievementFormModal: React.FC<AchievementFormModalProps> = ({
                 setFormData({ ...formData, title: e.target.value })
               }
               placeholder="Ví dụ: First Steps"
-              required
             />
           </div>
 
@@ -301,16 +304,16 @@ const AchievementFormModal: React.FC<AchievementFormModalProps> = ({
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    achievementType: e.target.value as any,
+                    achievementType: e.target
+                      .value as AchievementDto["achievementType"],
                   })
                 }
                 className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
               >
-                <option value="milestone">Milestone</option>
-                <option value="streak">Streak</option>
-                <option value="score">Score</option>
-                <option value="practice">Practice</option>
-                <option value="special">Special</option>
+                <option value="practice_streak">Chuỗi luyện tập</option>
+                <option value="total_questions">Tổng số câu hỏi</option>
+                <option value="score_milestone">Mốc điểm số</option>
+                <option value="total_practice_days">Tổng số ngày luyện tập</option>
               </select>
             </div>
 
@@ -325,8 +328,7 @@ const AchievementFormModal: React.FC<AchievementFormModalProps> = ({
                     points: parseInt(e.target.value) || 0,
                   })
                 }
-                min={0}
-                required
+                min="0"
               />
             </div>
           </div>

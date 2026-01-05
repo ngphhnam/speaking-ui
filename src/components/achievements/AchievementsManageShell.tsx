@@ -77,29 +77,29 @@ const AchievementsManageShell: React.FC = () => {
   const achievementTypes = [
     { value: "all", label: "Tất cả", count: filteredAchievements.length },
     {
-      value: "milestone",
-      label: "Milestone",
-      count: achievements.filter((a) => a.achievementType === "milestone").length,
+      value: "practice_streak",
+      label: "Chuỗi luyện tập",
+      count: achievements.filter((a) => a.achievementType === "practice_streak")
+        .length,
     },
     {
-      value: "streak",
-      label: "Streak",
-      count: achievements.filter((a) => a.achievementType === "streak").length,
+      value: "total_questions",
+      label: "Tổng số câu hỏi",
+      count: achievements.filter((a) => a.achievementType === "total_questions")
+        .length,
     },
     {
-      value: "score",
-      label: "Score",
-      count: achievements.filter((a) => a.achievementType === "score").length,
+      value: "score_milestone",
+      label: "Mốc điểm số",
+      count: achievements.filter((a) => a.achievementType === "score_milestone")
+        .length,
     },
     {
-      value: "practice",
-      label: "Practice",
-      count: achievements.filter((a) => a.achievementType === "practice").length,
-    },
-    {
-      value: "special",
-      label: "Special",
-      count: achievements.filter((a) => a.achievementType === "special").length,
+      value: "total_practice_days",
+      label: "Tổng số ngày luyện tập",
+      count: achievements.filter(
+        (a) => a.achievementType === "total_practice_days"
+      ).length,
     },
   ];
 

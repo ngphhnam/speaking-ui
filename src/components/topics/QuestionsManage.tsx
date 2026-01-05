@@ -226,10 +226,11 @@ export default function QuestionsManage({ topicId }: QuestionsManageProps) {
                             <li>
                               <DropdownItem
                                 tag="button"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  setDeleteConfirm({ questionId: question.id, questionText: question.questionText });
+                                onItemClick={() => {
+                                  setDeleteConfirm({
+                                    questionId: question.id,
+                                    questionText: question.questionText,
+                                  });
                                   setOpenDropdownId(null);
                                 }}
                                 className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
