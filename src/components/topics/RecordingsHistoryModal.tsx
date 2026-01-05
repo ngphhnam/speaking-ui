@@ -64,6 +64,10 @@ export default function RecordingsHistoryModal({
 
   if (!isOpen) return null;
 
+  // Simplified translation function to match RecordingListItemProps
+  const simpleT = (key: string, defaultValue?: string) =>
+    t(key, defaultValue ?? key);
+
   return (
     <>
       <Modal isOpen={isOpen && !selectedRecordingId} onClose={onClose}>
@@ -119,7 +123,7 @@ export default function RecordingsHistoryModal({
                   recording={recording}
                   orderNumber={recordings.length - index}
                   onClick={() => handleRecordingClick(recording.id)}
-                  t={t}
+                  t={simpleT}
                   formatDate={formatDate}
                   formatDuration={formatDuration}
                 />

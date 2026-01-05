@@ -70,6 +70,7 @@ export default function CreateQuestion({ topicId }: CreateQuestionProps) {
         suggestedStructure: "",
         sampleAnswers: "",
         keyVocabulary: "",
+        questionType: "",
       },
     ]);
   };
@@ -200,6 +201,7 @@ export default function CreateQuestion({ topicId }: CreateQuestionProps) {
         suggestedStructure: "",
         sampleAnswers: "",
         keyVocabulary: "",
+        questionType: "",
       };
       setQuestions(newQuestions);
     } catch (error) {
@@ -345,7 +347,6 @@ export default function CreateQuestion({ topicId }: CreateQuestionProps) {
                     onChange={(value) => updateQuestion(index, "questionText", value)}
                     placeholder={t("topics.questionTextPlaceholder")}
                     rows={3}
-                    required
                   />
                 </div>
 

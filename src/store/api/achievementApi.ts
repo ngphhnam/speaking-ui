@@ -9,6 +9,7 @@ export interface AchievementDto {
   title: string;
   description: string;
   achievementType: "practice_streak" | "total_questions" | "score_milestone" | "total_practice_days";
+  requirementCriteria: string | null;
   points: number;
   badgeIconUrl: string | null;
   isActive: boolean;
@@ -32,6 +33,7 @@ export interface CreateAchievementRequest {
   achievementType: "practice_streak" | "total_questions" | "score_milestone" | "total_practice_days";
   points: number;
   badgeIconUrl?: string;
+  requirementCriteria?: string;
 }
 
 export interface UpdateAchievementRequest {
@@ -41,6 +43,7 @@ export interface UpdateAchievementRequest {
   points?: number;
   badgeIconUrl?: string;
   isActive?: boolean;
+  requirementCriteria?: string | null;
 }
 
 interface ApiResponse<T> {

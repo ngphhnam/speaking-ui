@@ -17,12 +17,16 @@ const AchievementCard: React.FC<AchievementCardProps> = ({
   onDelete,
   isAdmin = false,
 }) => {
-  const typeColors = {
-    milestone: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-    streak: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
-    score: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-    practice: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
-    special: "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400",
+  // Map backend achievement types to color classes
+  const typeColors: Record<AchievementDto["achievementType"], string> = {
+    practice_streak:
+      "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
+    total_questions:
+      "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+    score_milestone:
+      "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+    total_practice_days:
+      "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
   };
 
   return (

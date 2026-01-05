@@ -124,6 +124,7 @@ export default function TopicsBrowse() {
   }
 
   if (error) {
+    const status = (error as any)?.status;
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
@@ -131,9 +132,9 @@ export default function TopicsBrowse() {
             {t("topics.loadingErrorTitle")}
           </p>
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            {error.status === "FETCH_ERROR"
+            {status === "FETCH_ERROR"
               ? t("topics.loadingErrorOffline")
-              : t("topics.loadingErrorStatus", { status: error.status })}
+              : t("topics.loadingErrorStatus", { status })}
           </p>
         </div>
       </div>
@@ -332,10 +333,11 @@ export default function TopicsBrowse() {
                           <li>
                             <DropdownItem
                               tag="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setDeleteConfirm({ topicId: topic.id, topicTitle: topic.title });
+                              onItemClick={() => {
+                                setDeleteConfirm({
+                                  topicId: topic.id,
+                                  topicTitle: topic.title,
+                                });
                                 setOpenDropdownId(null);
                               }}
                               className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
