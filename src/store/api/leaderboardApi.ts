@@ -2,7 +2,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type { RootState } from "@/store/store";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000";
+  process.env.NEXT_PUBLIC_API_BASE_URL ;
 
 export interface LeaderboardEntry {
   rank: number;
@@ -109,6 +109,8 @@ export const {
   useGetTopPracticeTimeQuery,
   useGetMyRankQuery,
 } = leaderboardApi;
+
+
 
 
 

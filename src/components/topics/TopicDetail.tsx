@@ -276,7 +276,7 @@ export default function TopicDetail({ topicId, questionPartNumber }: TopicDetail
             headers["Authorization"] = `Bearer ${accessToken}`;
           }
 
-          const response = await fetch("http://localhost:5000/api/session/speaking-session", {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/session/speaking-session`, {
             method: "POST",
             headers,
             credentials: "include",
