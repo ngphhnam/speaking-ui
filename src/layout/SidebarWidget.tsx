@@ -86,8 +86,8 @@ export default function SidebarWidget() {
     if (!shouldConnect) return;
 
     const baseUrl =
-      process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000";
-    const hubUrl = `${baseUrl.replace(/\/+$/, "")}/hubs/payments`;
+      process.env.NEXT_PUBLIC_API_BASE_URL ;
+    const hubUrl = `${baseUrl?.replace(/\/+$/, "")}/hubs/payments`;
 
     const connection = new signalR.HubConnectionBuilder()
       .withUrl(hubUrl, {

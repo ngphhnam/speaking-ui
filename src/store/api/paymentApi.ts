@@ -3,7 +3,7 @@ import type { RootState } from "@/store/store";
 import type { ApiResponse } from "@/store/types";
 
 const API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000";
+    process.env.NEXT_PUBLIC_API_BASE_URL ;
 
 export type PremiumCheckoutResponse = {
   checkoutUrl: string;
