@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { Dropdown } from "@/components/ui/dropdown/Dropdown";
 import { DropdownItem } from "@/components/ui/dropdown/DropdownItem";
 import { Modal } from "@/components/ui/modal";
+import { useAppSelector } from "@/store/hooks";
 
 type QuestionsManageProps = {
   topicId: string;
@@ -18,6 +19,8 @@ type QuestionsManageProps = {
 export default function QuestionsManage({ topicId }: QuestionsManageProps) {
   const { t } = useTranslation();
   const router = useRouter();
+  const { user } = useAppSelector((state) => state.auth);
+  const isAdmin = user?.role === "Admin";
   const [mounted, setMounted] = useState(false);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ questionId: string; questionText: string } | null>(null);
@@ -131,11 +134,13 @@ export default function QuestionsManage({ topicId }: QuestionsManageProps) {
                   {t("topics.questionType", "Question Type")}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                  {t("topics.attempts", "Attempts")}
+                  {t("topics.attemptsLabel", "Total Attempts")}
                 </th>
+                {isAdmin && (
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
                   {t("topics.avgScore", "Avg Score")}
                 </th>
+                )}
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
                   {t("topics.status", "Status")}
                 </th>
@@ -167,9 +172,11 @@ export default function QuestionsManage({ topicId }: QuestionsManageProps) {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {question.attemptsCount ?? 0}
                     </td>
+                    {isAdmin && (
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {typeof question.avgScore === "number" ? question.avgScore.toFixed(1) : "-"}
                     </td>
+                    )}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <button
                         onClick={() => handleToggleActive(question.id, question.isActive)}

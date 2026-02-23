@@ -12,6 +12,7 @@ import WeakTopics from "./WeakTopics";
 import RecentActivity from "./RecentActivity";
 import StreakCard from "./StreakCard";
 import Link from "next/link";
+import PracticeHeatmap from "./PracticeHeatmap";
 
 export default function DashboardShell() {
   const { t } = useTranslation();
@@ -124,25 +125,47 @@ export default function DashboardShell() {
             )}
           </p>
         </div>
-        <Link
-          href="/practice-by-questions"
-          className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 dark:bg-brand-500 dark:hover:bg-brand-600"
-        >
-          <svg
-            className="h-5 w-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href="/practice-by-questions"
+            className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 dark:bg-brand-500 dark:hover:bg-brand-600"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
-            />
-          </svg>
-          {t("dashboard.startPractice", "Bắt đầu luyện tập")}
-        </Link>
+            <svg
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+              />
+            </svg>
+            {t("dashboard.startPractice", "Bắt đầu luyện tập")}
+          </Link>
+
+          <Link
+            href="/vocabulary-book"
+            className="inline-flex items-center gap-2 rounded-xl border-2 border-gray-200 bg-white px-6 py-3 text-sm font-semibold text-gray-700 shadow-sm transition hover:border-brand-300 hover:text-brand-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-brand-500 dark:hover:text-brand-300"
+          >
+            <svg
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 6h8M12 10h8M12 14h6M4 6h4v14H6a2 2 0 01-2-2V6z"
+              />
+            </svg>
+            {t("dashboard.vocabularyBook", "Sổ từ vựng")}
+          </Link>
+        </div>
       </div>
 
       {/* Metrics */}
@@ -158,6 +181,9 @@ export default function DashboardShell() {
         </div>
       </div>
 
+      {/* Practice heatmap (GitHub-like) */}
+      <PracticeHeatmap userId={userId} />
+
       {/* Progress Chart */}
       <ProgressChart statistics={statistics} />
 
@@ -168,7 +194,7 @@ export default function DashboardShell() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Link
           href="/learning-history"
           className="group rounded-xl border-2 border-gray-200 bg-white p-6 transition hover:border-brand-500 hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:border-brand-500"
@@ -195,6 +221,50 @@ export default function DashboardShell() {
               </h3>
               <p className="text-xs text-gray-500 dark:text-gray-400">
                 {t("dashboard.viewAllRecordings", "Xem tất cả bài làm")}
+              </p>
+            </div>
+            <svg
+              className="ml-auto h-5 w-5 text-gray-400 transition-transform group-hover:translate-x-1 group-hover:text-brand-600 dark:group-hover:text-brand-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </div>
+        </Link>
+
+        <Link
+          href="/vocabulary-book"
+          className="group rounded-xl border-2 border-gray-200 bg-white p-6 transition hover:border-brand-500 hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:border-brand-500"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-900/30">
+              <svg
+                className="h-6 w-6 text-indigo-600 dark:text-indigo-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 6h8M12 10h8M12 14h6M4 6h4v14H6a2 2 0 01-2-2V6z"
+                />
+              </svg>
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900 dark:text-white">
+                {t("dashboard.vocabularyBook", "Sổ từ vựng")}
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {t("dashboard.reviewVocabulary", "Ôn lại từ vựng đã lưu")}
               </p>
             </div>
             <svg

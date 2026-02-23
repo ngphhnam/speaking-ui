@@ -5,6 +5,8 @@ import type {
   LoginRequest,
   RefreshTokenRequest,
   RegisterRequest,
+  SocialLoginRequest,
+  VerifyEmailRequest,
 } from "@/store/types";
 import type { RootState } from "@/store/store";
 import {
@@ -37,6 +39,23 @@ export const authApi = createApi({
         url: "/api/auth/login",
         method: "POST",
         body: credentials,
+      }),
+      transformResponse: (response: ApiResponse<AuthResponse>) => response.data,
+      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          dispatch(setCredentials(data));
+          // Tokens are stored in cookies by the backend; do not persist in localStorage.
+        } catch {
+          /* noop */
+        }
+      },
+    }),
+    socialLogin: builder.mutation<AuthResponse, SocialLoginRequest>({
+      query: (payload) => ({
+        url: "/api/auth/social-login",
+        method: "POST",
+        body: payload,
       }),
       transformResponse: (response: ApiResponse<AuthResponse>) => response.data,
       async onQueryStarted(_, { dispatch, queryFulfilled }) {
@@ -167,11 +186,28 @@ export const authApi = createApi({
       transformResponse: (response: ApiResponse<{ message: string }>) =>
         response.data,
     }),
+    verifyEmail: builder.mutation<AuthResponse, VerifyEmailRequest>({
+      query: (payload) => ({
+        url: "/api/auth/verify-email",
+        method: "POST",
+        body: payload,
+      }),
+      transformResponse: (response: ApiResponse<AuthResponse>) => response.data,
+      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          dispatch(setCredentials(data));
+        } catch {
+          /* noop */
+        }
+      },
+    }),
   }),
 });
 
 export const {
   useLoginMutation,
+  useSocialLoginMutation,
   useRegisterMutation,
   useRefreshTokenMutation,
   useMeQuery,
@@ -180,5 +216,6 @@ export const {
   useUploadAvatarMutation,
   useDeleteAvatarMutation,
   useChangePasswordMutation,
+  useVerifyEmailMutation,
 } = authApi;
 

@@ -13,15 +13,6 @@ export default function DashboardMetrics({
 }: DashboardMetricsProps) {
   const { t } = useTranslation();
 
-  const formatTime = (minutes: number) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    if (hours > 0) {
-      return `${hours}h ${mins}m`;
-    }
-    return `${mins}m`;
-  };
-
   const getScoreColor = (score: number | null) => {
     if (!score) return "text-gray-600 dark:text-gray-400";
     if (score >= 7) return "text-emerald-600 dark:text-emerald-400";
@@ -102,31 +93,10 @@ export default function DashboardMetrics({
       color: getScoreColor(statistics.averageScore),
       bg: getScoreBg(statistics.averageScore),
     },
-    {
-      icon: (
-        <svg
-          className="h-6 w-6"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
-        </svg>
-      ),
-      label: t("dashboard.practiceTime", "Thời gian luyện"),
-      value: formatTime(statistics.totalPracticeTime),
-      color: "text-indigo-600 dark:text-indigo-400",
-      bg: "bg-indigo-100 dark:bg-indigo-900/30",
-    },
   ];
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {metrics.map((metric, index) => (
         <div
           key={index}
@@ -148,6 +118,11 @@ export default function DashboardMetrics({
     </div>
   );
 }
+
+
+
+
+
 
 
 

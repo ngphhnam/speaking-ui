@@ -52,6 +52,13 @@ export type LoginRequest = {
   password: string;
 };
 
+export type SocialLoginRequest = {
+  email: string;
+  name: string;
+  avatar?: string | null;
+  provider: string;
+};
+
 export type RegisterRequest = {
   email: string;
   password: string;
@@ -63,6 +70,12 @@ export type RefreshTokenRequest = {
   refreshToken: string;
 };
 
+export type VerifyEmailRequest = {
+  email: string;
+  code: string;
+  token: string;
+};
+
 // Generic API response wrapper used across the app
 export type ApiResponse<T> = {
   success: boolean;
@@ -72,5 +85,3 @@ export type ApiResponse<T> = {
   timestamp?: string;
   metadata?: unknown;
 };
-
-

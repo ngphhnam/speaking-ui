@@ -22,6 +22,7 @@ export default function SignUpForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const [registerUser, { isLoading }] = useRegisterMutation();
   const { t } = useTranslation();
@@ -55,7 +56,7 @@ export default function SignUpForm() {
         password,
         fullName,
       }).unwrap();
-      router.push("/");
+      setIsSuccess(true);
     } catch (error) {
       setFormError(getErrorMessage(error, t, t("auth.signUpError", "Unable to sign up. Please try again.")));
     }
@@ -77,15 +78,75 @@ export default function SignUpForm() {
       </div>
       <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
         <div>
-          <div className="mb-5 sm:mb-8">
-            <h1 className="mb-2 font-semibold text-gray-800 text-title-sm dark:text-white/90 sm:text-title-md">
-              {t("auth.signUpTitle", "Create Account")}
-            </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              {t("auth.signUpSubtitle", "Sign up to start practicing your IELTS speaking skills.")}
-            </p>
-          </div>
-          <div>
+          {isSuccess ? (
+            <div className="text-center">
+              <div className="mb-5 sm:mb-8">
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-success-100 dark:bg-success-900/20">
+                  <svg
+                    className="h-8 w-8 text-success-600 dark:text-success-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                    />
+                  </svg>
+                </div>
+                <h1 className="mb-2 font-semibold text-gray-800 text-title-sm dark:text-white/90 sm:text-title-md">
+                  {t("auth.signUpSuccessTitle", "Registration Successful!")}
+                </h1>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                  {t("auth.checkEmailMessage", "Hãy kiểm tra email của bạn để xác thực tài khoản")}
+                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {t("auth.checkEmailSubtitle", "We've sent a verification link to")}{" "}
+                  <span className="font-medium text-gray-800 dark:text-white/90">{email}</span>
+                </p>
+              </div>
+              <div className="space-y-4">
+                <div className="rounded-lg border border-success-200 bg-success-50 p-4 dark:bg-success-900/10 dark:border-success-800">
+                  <p className="text-sm text-success-800 dark:text-success-300">
+                    {t("auth.checkEmailInstructions", "Please check your inbox and click on the verification link to activate your account.")}
+                  </p>
+                </div>
+                <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+                  <Link href="/signin">
+                    <Button variant="outline" className="w-full sm:w-auto">
+                      {t("auth.backToSignIn", "Back to Sign In")}
+                    </Button>
+                  </Link>
+                  <Button
+                    variant="outline"
+                    className="w-full sm:w-auto"
+                    onClick={() => {
+                      setIsSuccess(false);
+                      setEmail("");
+                      setPassword("");
+                      setFirstName("");
+                      setLastName("");
+                      setFormError(null);
+                    }}
+                  >
+                    {t("auth.registerAnother")}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="mb-5 sm:mb-8">
+                <h1 className="mb-2 font-semibold text-gray-800 text-title-sm dark:text-white/90 sm:text-title-md">
+                  {t("auth.signUpTitle", "Create Account")}
+                </h1>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {t("auth.signUpSubtitle", "Sign up to start practicing your IELTS speaking skills.")}
+                </p>
+              </div>
+              <div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5">
               <button className="inline-flex items-center justify-center gap-3 py-3 text-sm font-normal text-gray-700 transition-colors bg-gray-100 rounded-lg px-7 hover:bg-gray-200 hover:text-gray-800 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10">
                 <svg
@@ -257,7 +318,9 @@ export default function SignUpForm() {
                 </Link>
               </p>
             </div>
-          </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

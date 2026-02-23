@@ -1,61 +1,43 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { useTranslation } from "react-i18next";
 import Link from "next/link";
-
-type TestStatus = "not_started" | "in_progress" | "completed";
+import { useRouter } from "next/navigation";
+import {
+  type MockTestDto,
+  useGetMyMockTestHistoryQuery,
+  useStartMockTestMutation,
+} from "@/store/api/mockTestApi";
+import { getErrorMessage } from "@/utils/errorHandler";
 
 export default function MockTestShell() {
   const { t } = useTranslation();
-  const [testStatus, setTestStatus] = useState<TestStatus>("not_started");
+  const router = useRouter();
+  const [startMockTest, { isLoading: isStarting }] = useStartMockTestMutation();
+  const {
+    data: history,
+    isLoading: isLoadingHistory,
+    error: historyError,
+    refetch,
+  } = useGetMyMockTestHistoryQuery();
 
-  const mockTests = [
-    {
-      id: "1",
-      title: "IELTS Speaking Mock Test #1",
-      description: "Full test with Part 1, Part 2, and Part 3",
-      duration: "11-14 minutes",
-      difficulty: "Intermediate",
-      topics: ["Daily Routine", "Hobbies", "Technology"],
-      completed: true,
-      lastScore: 7.5,
-      attempts: 3,
-    },
-    {
-      id: "2",
-      title: "IELTS Speaking Mock Test #2",
-      description: "Full test with Part 1, Part 2, and Part 3",
-      duration: "11-14 minutes",
-      difficulty: "Advanced",
-      topics: ["Education", "Environment", "Social Issues"],
-      completed: false,
-      lastScore: null,
-      attempts: 0,
-    },
-    {
-      id: "3",
-      title: "IELTS Speaking Mock Test #3",
-      description: "Full test with Part 1, Part 2, and Part 3",
-      duration: "11-14 minutes",
-      difficulty: "Beginner",
-      topics: ["Family", "Food", "Travel"],
-      completed: true,
-      lastScore: 6.0,
-      attempts: 1,
-    },
-  ];
-
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty.toLowerCase()) {
-      case "beginner":
-        return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
-      case "intermediate":
-        return "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400";
-      case "advanced":
-        return "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400";
-      default:
-        return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300";
+  const handleStart = async () => {
+    try {
+      const started = await startMockTest({
+        part1QuestionCount: 3,
+        part2QuestionCount: 1,
+        part3QuestionCount: 4,
+      }).unwrap();
+      router.push(`/mock-test/${started.id}`);
+    } catch (e) {
+      alert(
+        getErrorMessage(
+          e,
+          t,
+          t("mockTest.startFailed", "Không thể bắt đầu mock test. Vui lòng thử lại.")
+        )
+      );
     }
   };
 
@@ -165,138 +147,114 @@ export default function MockTestShell() {
         </div>
       </div>
 
-      {/* Mock Tests Grid */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {mockTests.map((test) => (
-          <div
-            key={test.id}
-            className="rounded-xl border-2 border-gray-200 bg-white p-6 shadow-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
-          >
-            <div className="mb-4 flex items-start justify-between">
-              <div className="flex-1">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <button
+          onClick={handleStart}
+          disabled={isStarting}
+          className="rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-brand-500 dark:hover:bg-brand-600"
+        >
+          {isStarting
+            ? t("mockTest.starting", "Đang bắt đầu...")
+            : t("mockTest.start", "Bắt đầu Mock Test")}
+        </button>
+
+        <button
+          onClick={() => refetch()}
+          className="rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:border-brand-500 hover:text-brand-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-brand-500 dark:hover:text-brand-400"
+        >
+          {t("mockTest.refresh", "Tải lại lịch sử")}
+        </button>
+      </div>
+
+      {/* History */}
+      <div className="rounded-xl border-2 border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {test.title}
+          {t("mockTest.historyTitle", "Lịch sử Mock Test")}
                 </h3>
                 <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                  {test.description}
-                </p>
+          {t(
+            "mockTest.historyDesc",
+            "Bạn có thể tiếp tục bài đang làm hoặc xem kết quả bài đã hoàn thành."
+          )}
+        </p>
+
+        {historyError ? (
+          <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 dark:border-rose-900/40 dark:bg-rose-900/20 dark:text-rose-200">
+            {getErrorMessage(
+              historyError,
+              t,
+              t("mockTest.historyFailed", "Không thể tải lịch sử.")
+            )}
+          </div>
+        ) : null}
+
+        {isLoadingHistory ? (
+          <div className="mt-4 text-sm text-gray-500">
+            {t("mockTest.loadingHistory", "Đang tải...")}
+          </div>
+        ) : (
+          <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {(history ?? []).length === 0 ? (
+              <div className="text-sm text-gray-500">
+                {t("mockTest.noHistory", "Chưa có mock test nào.")}
               </div>
-              {test.completed && test.lastScore && (
-                <div className="ml-4 flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
-                  <span
-                    className={`text-lg font-bold ${getScoreColor(
-                      test.lastScore
-                    )}`}
-                  >
-                    {test.lastScore.toFixed(1)}
-                  </span>
+            ) : (
+              (history ?? []).map((test: MockTestDto) => (
+                <div
+                  key={test.id}
+                  className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-950"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                        {t("mockTest.test", "Mock Test")} #{test.id.slice(0, 6)}
+                      </div>
+                      <div className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                        {t("mockTest.startedAt", "Bắt đầu")}{" "}
+                        {new Date(test.startedAt).toLocaleString()}
                 </div>
-              )}
             </div>
 
-            <div className="mb-4 flex flex-wrap gap-2">
+                    {test.status === "completed" && test.overallScore != null ? (
+                      <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
               <span
-                className={`rounded-full px-3 py-1 text-xs font-medium ${getDifficultyColor(
-                  test.difficulty
+                          className={`text-base font-bold ${getScoreColor(
+                            test.overallScore
                 )}`}
               >
-                {test.difficulty}
+                          {Number(test.overallScore).toFixed(1)}
               </span>
-              <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-300">
-                <svg
-                  className="mr-1 inline h-3.5 w-3.5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                {test.duration}
-              </span>
-              {test.attempts > 0 && (
-                <span className="rounded-full bg-purple-100 px-3 py-1 text-xs font-medium text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
-                  {test.attempts}{" "}
-                  {test.attempts === 1
-                    ? t("mockTest.attempt", "lần")
-                    : t("mockTest.attempts", "lần")}
+                      </div>
+                    ) : (
+                      <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-200">
+                        {t("mockTest.inProgress", "Đang làm")}
                 </span>
               )}
             </div>
 
-            <div className="mb-4">
-              <p className="mb-2 text-xs font-medium text-gray-600 dark:text-gray-400">
-                {t("mockTest.topics", "Chủ đề:")}
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {test.topics.map((topic, index) => (
-                  <span
-                    key={index}
-                    className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700 dark:bg-brand-900/40 dark:text-brand-300"
-                  >
-                    {topic}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex gap-3">
+                  <div className="mt-3 flex gap-2">
               <Link
                 href={`/mock-test/${test.id}`}
-                className="flex-1 rounded-lg bg-brand-600 px-4 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-brand-700 dark:bg-brand-500 dark:hover:bg-brand-600"
+                      className="flex-1 rounded-lg bg-brand-600 px-4 py-2 text-center text-sm font-semibold text-white transition hover:bg-brand-700 dark:bg-brand-500 dark:hover:bg-brand-600"
               >
-                {test.completed
+                      {test.status === "completed"
                   ? t("mockTest.retake", "Làm lại")
-                  : t("mockTest.start", "Bắt đầu")}
+                        : t("mockTest.continue", "Tiếp tục")}
               </Link>
-              {test.completed && (
+                    {test.status === "completed" ? (
                 <Link
                   href={`/mock-test/${test.id}/results`}
-                  className="flex items-center gap-2 rounded-lg border-2 border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:border-brand-500 hover:text-brand-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-brand-500 dark:hover:text-brand-400"
+                        className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-brand-500 hover:text-brand-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-brand-500 dark:hover:text-brand-400"
                 >
-                  <svg
-                    className="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                    />
-                  </svg>
                   {t("mockTest.viewResults", "Kết quả")}
                 </Link>
-              )}
+                    ) : null}
             </div>
           </div>
-        ))}
+              ))
+            )}
       </div>
-
-      {/* Coming Soon */}
-      <div className="rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 p-8 text-center dark:border-gray-700 dark:bg-gray-800/50">
-        <svg
-          className="mx-auto mb-4 h-12 w-12 text-gray-400 dark:text-gray-600"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={1.5}
-            d="M12 4v16m8-8H4"
-          />
-        </svg>
-        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-          {t("mockTest.moreComing", "Thêm bài thi thử sẽ được cập nhật sớm!")}
-        </p>
+        )}
       </div>
     </div>
   );

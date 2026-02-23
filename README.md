@@ -1,173 +1,98 @@
-# TailAdmin Next.js - Free Next.js Tailwind Admin Dashboard Template
+# AI Speaking / IELTS Speaking Practice (Next.js)
 
-TailAdmin is a free and open-source admin dashboard template built on **Next.js and Tailwind CSS** providing developers with everything they need to create a feature-rich and data-driven: back-end, dashboard, or admin panel solution for any sort of web project.
+Web app for **self-practice IELTS Speaking**: practice by Part 1/2/3, manage topics & questions, take a full **mock test**, review **learning history**, and maintain a **personal vocabulary book**. The UI is built with Next.js App Router and integrates with an external backend API for authentication and data.
 
-![TailAdmin - Next.js Dashboard Preview](./banner.png)
+![App preview](./banner.png)
 
-With TailAdmin Next.js, you get access to all the necessary dashboard UI components, elements, and pages required to build a high-quality and complete dashboard or admin panel. Whether you're building a dashboard or admin panel for a complex web application or a simple website. 
+## Features
 
-TailAdmin utilizes the powerful features of **Next.js 15** and common features of Next.js such as server-side rendering (SSR), static site generation (SSG), and seamless API route integration. Combined with the advancements of **React 19** and the robustness of **TypeScript**, TailAdmin is the perfect solution to help get your project up and running quickly.
+- **Practice by Questions** (`/practice-by-questions`): pick a Part, select a topic, and practice question-by-question.
+- **Topics & Questions management** (`/topics`, `/topics/manage`, `/topics/create`): create/edit topics and questions (includes “Part 2 & Part 3” mapping support).
+- **Mock Test** (`/mock-test`): start a full speaking mock test and view results.
+- **Learning History** (`/learning-history`): sessions list, score filters, progress statistics.
+- **Profile & Settings** (`/my-profile`, `/settings`): profile updates, practice preferences, notification preferences.
+- **Vocabulary Book** (`/vocabulary-book`): save and review vocabulary items.
+- **OAuth login**: Google / GitHub via NextAuth; backend social-login is triggered from `/social-callback`.
+- **i18n**: English/Vietnamese strings via `react-i18next`.
 
-## Overview
+## Tech stack
 
-TailAdmin provides essential UI components and layouts for building feature-rich, data-driven admin dashboards and control panels. It's built on:
+- Next.js **15** (App Router) + React **19** + TypeScript
+- Tailwind CSS **v4**
+- Redux Toolkit + RTK Query
+- NextAuth (Google/GitHub providers)
 
-- Next.js 15.x
-- React 19
-- TypeScript
-- Tailwind CSS V4
-
-### Quick Links
-- [✨ Visit Website](https://tailadmin.com)
-- [📄 Documentation](https://tailadmin.com/docs)
-- [⬇️ Download](https://tailadmin.com/download)
-- [🖌️ Figma Design File (Community Edition)](https://www.figma.com/community/file/1463141366275764364)
-- [⚡ Get PRO Version](https://tailadmin.com/pricing)
-
-### Demos
-- [Free Version](https://nextjs-free-demo.tailadmin.com)
-- [Pro Version](https://nextjs-demo.tailadmin.com)
-
-### Other Versions
-- [HTML Version](https://github.com/TailAdmin/tailadmin-free-tailwind-dashboard-template)
-- [React Version](https://github.com/TailAdmin/free-react-tailwind-admin-dashboard)
-- [Vue.js Version](https://github.com/TailAdmin/vue-tailwind-admin-dashboard)
-
-## Installation
+## Getting started
 
 ### Prerequisites
-To get started with TailAdmin, ensure you have the following prerequisites installed and set up:
 
-- Node.js 18.x or later (recommended to use Node.js 20.x or later)
+- Node.js 18+ (recommended: 20+)
+- A running backend API (see `NEXT_PUBLIC_API_BASE_URL` below)
 
-### Cloning the Repository
-Clone the repository using the following command:
+### Install & run
 
 ```bash
-git clone https://github.com/TailAdmin/free-nextjs-admin-dashboard.git
+npm install
+npm run dev
 ```
 
-> Windows Users: place the repository near the root of your drive if you face issues while cloning.
+Then open `http://localhost:3000`.
 
-1. Install dependencies:
-    ```bash
-    npm install
-    # or
-    yarn install
-    ```
-    > Use `--legacy-peer-deps` flag if you face peer-dependency error during installation.
+## Environment variables
 
-2. Start the development server:
-    ```bash
-    npm run dev
-    # or
-    yarn dev
-    ```
+Copy `env.example` to `.env.local` and fill in your values.
 
-## Components
+If you use `npm run prod`, copy `env.pro.example` to `.env.pro`.
 
-TailAdmin is a pre-designed starting point for building a web-based dashboard using Next.js and Tailwind CSS. The template includes:
+### Required (frontend → backend)
 
-- Sophisticated and accessible sidebar
-- Data visualization components
-- Profile management and custom 404 page
-- Tables and Charts(Line and Bar)
-- Authentication forms and input elements
-- Alerts, Dropdowns, Modals, Buttons and more
-- Can't forget Dark Mode 🕶️
+- `NEXT_PUBLIC_API_BASE_URL`  
+  Base URL of your backend API (the app calls endpoints like `/api/auth/me`, `/api/topics`, `/api/mock-tests`, etc.).
 
-All components are built with React and styled using Tailwind CSS for easy customization.
+### Required (NextAuth OAuth)
 
-## Feature Comparison
+- `NEXTAUTH_URL`  
+  Your Next.js site URL (example: `http://localhost:3000` in local dev).
+- `NEXTAUTH_SECRET`  
+  Long random string.
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
+- `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`
 
-### Free Version
-- 1 Unique Dashboard
-- 30+ dashboard components
-- 50+ UI elements
-- Basic Figma design files
-- Community support
+For production values and OAuth redirect URLs, see `ENVIRONMENT.md`.
 
-### Pro Version
-- 7 Unique Dashboards: Analytics, Ecommerce, Marketing, CRM, SaaS, Stocks, Logistics (more coming soon)
-- 500+ dashboard components and UI elements
-- Complete Figma design file
-- Email support
+### Optional (local AI services)
 
-To learn more about pro version features and pricing, visit our [pricing page](https://tailadmin.com/pricing).
+These have defaults (see `src/lib/api/speaking.ts`) and are only needed if you run those services:
 
-## Changelog
+- `NEXT_PUBLIC_LLAMA_API_BASE_URL` (default `http://localhost:11435`)
+- `NEXT_PUBLIC_LANGUAGE_TOOL_API_BASE_URL` (default `http://localhost:8010`)
 
-### Version 2.0.2 - [March 25, 2025]
+## Useful scripts
 
-- Upgraded to Next v15.2.3 for [CVE-2025-29927](https://nextjs.org/blog/cve-2025-29927) concerns
-- Included overrides vectormap for packages to prevent peer dependency errors during installation.
-- Migrated from react-flatpickr to flatpickr package for React 19 support
+- `npm run dev`: start dev server
+- `npm run build`: build
+- `npm run start`: start production server
+- `npm run prod`: build using `.env.pro` (see `package.json`)
+- `npm run import-data`: import `sample-data.json` into your backend (see `README-SAMPLE-DATA.md`)
 
-### Version 2.0.1 - [February 27, 2025]
+## Sample data (topics/questions)
 
-#### Update Overview
+If you want quick data to test the Topics/Questions and practice flows:
 
-- Upgraded to Tailwind CSS v4 for better performance and efficiency.
-- Updated class usage to match the latest syntax and features.
-- Replaced deprecated class and optimized styles.
+- Read `README-SAMPLE-DATA.md`
+- Run:
 
-#### Next Steps
+```bash
+npm run import-data
+```
 
-- Run npm install or yarn install to update dependencies.
-- Check for any style changes or compatibility issues.
-- Refer to the Tailwind CSS v4 [Migration Guide](https://tailwindcss.com/docs/upgrade-guide) on this release. if needed.
-- This update keeps the project up to date with the latest Tailwind improvements. 🚀
+The import script uses `API_URL` (defaults to `http://localhost:5000/api`) — see `scripts/import-data.js`.
 
-### v2.0.0 (February 2025)
-A major update focused on Next.js 15 implementation and comprehensive redesign.
+## Credits
 
-#### Major Improvements
-- Complete redesign using Next.js 15 App Router and React Server Components
-- Enhanced user interface with Next.js-optimized components
-- Improved responsiveness and accessibility
-- New features including collapsible sidebar, chat screens, and calendar
-- Redesigned authentication using Next.js App Router and server actions
-- Updated data visualization using ApexCharts for React
-
-#### Breaking Changes
-
-- Migrated from Next.js 14 to Next.js 15
-- Chart components now use ApexCharts for React
-- Authentication flow updated to use Server Actions and middleware
-
-[Read more](https://tailadmin.com/docs/update-logs/nextjs) on this release.
-
-#### Breaking Changes
-- Migrated from Next.js 14 to Next.js 15
-- Chart components now use ApexCharts for React
-- Authentication flow updated to use Server Actions and middleware
-
-### v1.3.4 (July 01, 2024)
-- Fixed JSvectormap rendering issues
-
-### v1.3.3 (June 20, 2024)
-- Fixed build error related to Loader component
-
-### v1.3.2 (June 19, 2024)
-- Added ClickOutside component for dropdown menus
-- Refactored sidebar components
-- Updated Jsvectormap package
-
-### v1.3.1 (Feb 12, 2024)
-- Fixed layout naming consistency
-- Updated styles
-
-### v1.3.0 (Feb 05, 2024)
-- Upgraded to Next.js 14
-- Added Flatpickr integration
-- Improved form elements
-- Enhanced multiselect functionality
-- Added default layout component
+This project started from the **TailAdmin free Next.js dashboard template**, then was adapted and extended into an IELTS Speaking practice product.
 
 ## License
 
-TailAdmin Next.js Free Version is released under the MIT License.
+MIT — see `LICENSE`.
 
-## Support
-
-If you find this project helpful, please consider giving it a star on GitHub. Your support helps us continue developing and maintaining this template.

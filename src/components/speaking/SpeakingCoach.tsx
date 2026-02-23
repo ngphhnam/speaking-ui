@@ -1,9 +1,11 @@
 "use client";
 
 import { useTranslation } from "react-i18next";
+import { useRouter } from "next/navigation";
 
 const SpeakingCoach = () => {
   const { t } = useTranslation();
+  const router = useRouter();
 
   const forecastItems = [
     { label: t("speaking.forecastPart", { part: 1 }), value: 15, total: 203 },
@@ -208,13 +210,10 @@ const SpeakingCoach = () => {
 
       {/* Bottom small cards */}
       <section className="flex flex-wrap gap-4">
-        <button className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-800 shadow-sm hover:bg-gray-50">
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-50 text-brand-600">
-            P
-          </span>
-          {t("speaking.pronunciationCourse")}
-        </button>
-        <button className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-800 shadow-sm hover:bg-gray-50">
+        <button
+          onClick={() => router.push("/vocabulary-book")}
+          className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-800 shadow-sm hover:bg-gray-50"
+        >
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-50 text-brand-600">
             S
           </span>
