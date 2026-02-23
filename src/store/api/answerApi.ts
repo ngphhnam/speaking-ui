@@ -61,6 +61,19 @@ export type SubmitAnswerRequest = {
   level?: string;
 };
 
+// Mock test submit answer response (NO scores/feedback here)
+export type SubmitMockTestAnswerResponse = {
+  recordingId: string;
+  status: "submitted";
+  message: string;
+};
+
+export type SubmitMockTestAnswerRequest = {
+  mockTestId: string;
+  audio: Blob | File;
+  questionId: string;
+};
+
 export const answerApi = createApi({
   reducerPath: "answerApi",
   baseQuery: fetchBaseQuery({
@@ -104,8 +117,40 @@ export const answerApi = createApi({
       },
       invalidatesTags: ["Answer"],
     }),
+
+    // Mock test: submit audio answer without returning scores
+    submitMockTestAnswer: builder.mutation<
+      SubmitMockTestAnswerResponse,
+      SubmitMockTestAnswerRequest
+    >({
+      query: ({ mockTestId, audio, questionId }) => {
+        const formData = new FormData();
+        formData.append("questionId", questionId);
+        const fileName =
+          typeof (audio as File)?.name === "string" && (audio as File).name
+            ? (audio as File).name
+            : "recording.webm";
+        formData.append("audio", audio, fileName);
+
+        return {
+          url: `/api/answers/submit?mockTestId=${encodeURIComponent(mockTestId)}`,
+          method: "POST",
+          body: formData,
+          // Don't set Content-Type header, browser will set it automatically with boundary for FormData
+          prepareHeaders: (headers: Headers) => {
+            headers.delete("Content-Type");
+            return headers;
+          },
+        };
+      },
+      transformResponse: (
+        response: ApiResponseWrapper<SubmitMockTestAnswerResponse>
+      ) => response.data,
+      invalidatesTags: ["Answer"],
+    }),
   }),
 });
 
-export const { useSubmitAnswerMutation } = answerApi;
+export const { useSubmitAnswerMutation, useSubmitMockTestAnswerMutation } =
+  answerApi;
 

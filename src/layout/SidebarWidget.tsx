@@ -174,7 +174,7 @@ export default function SidebarWidget() {
   useEffect(() => {
     if (redirectCountdown === null) return;
     if (redirectCountdown <= 0) {
-      router.push("/user-profile");
+      router.push("/my-profile");
       return;
     }
     const timer = setInterval(

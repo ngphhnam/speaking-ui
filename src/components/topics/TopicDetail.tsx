@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { useGetTopicByIdQuery } from "@/store/api/topicApi";
 import {
   useGetQuestionsQuery,
@@ -17,6 +18,7 @@ import {
   type VocabularyItem,
   type ImproveAnswerResponse,
 } from "@/store/api/generateApi";
+import { useSaveGeneratedVocabularyMutation } from "@/store/api/userVocabularyApi";
 import Button from "@/components/ui/button/Button";
 import { ChevronLeftIcon } from "@/icons";
 import { useRef, useState } from "react";
@@ -26,6 +28,7 @@ import AudioConfirmationModal from "./AudioConfirmationModal";
 import ScoringLoadingModal from "./ScoringLoadingModal";
 import RecordingsHistoryModal from "./RecordingsHistoryModal";
 import StreakNotificationModal from "./StreakNotificationModal";
+import NoteTakingModal from "./NoteTakingModal";
 import { Modal } from "@/components/ui/modal";
 import { useAppSelector } from "@/store/hooks";
 import { getErrorMessage, isErrorCode } from "@/utils/errorHandler";
@@ -72,7 +75,10 @@ const normalizeSuggestedStructure = (value?: string | null): string[] => {
 
 export default function TopicDetail({ topicId, questionPartNumber }: TopicDetailProps) {
   const { t } = useTranslation();
-  const { accessToken } = useAppSelector((state) => state.auth);
+  const searchParams = useSearchParams();
+  const questionIdFromUrl = searchParams.get("questionId");
+  const { accessToken, user } = useAppSelector((state) => state.auth);
+  const isAdmin = user?.role === "Admin";
   const {
     data: topic,
     isLoading: isTopicLoading,
@@ -244,6 +250,7 @@ export default function TopicDetail({ topicId, questionPartNumber }: TopicDetail
   >({});
   const [activeRecordingQuestionId, setActiveRecordingQuestionId] = useState<string | null>(null);
   const [showConfirmationModal, setShowConfirmationModal] = useState<string | null>(null);
+  const [showNoteTakingModal, setShowNoteTakingModal] = useState<string | null>(null);
   const [sessionCreated, setSessionCreated] = useState(false);
   const [recordingsHistoryModal, setRecordingsHistoryModal] = useState<{
     questionId: string;
@@ -262,6 +269,8 @@ export default function TopicDetail({ topicId, questionPartNumber }: TopicDetail
   const silenceCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [autoPausedReason, setAutoPausedReason] = useState<string | null>(null);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const questionRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [highlightedQuestionId, setHighlightedQuestionId] = useState<string | null>(null);
 
   // Create speaking session when topic is loaded
   useEffect(() => {
@@ -299,6 +308,39 @@ export default function TopicDetail({ topicId, questionPartNumber }: TopicDetail
     }
   }, [topic, topicId, sessionCreated, isTopicLoading, accessToken]);
 
+  // Scroll to question and auto-open note-taking modal for Part 2 when questionId is in URL
+  useEffect(() => {
+    if (questionIdFromUrl && questionsArray.length > 0 && !isLoading) {
+      const question = questionsArray.find((q) => q.id === questionIdFromUrl);
+      
+      // Auto-open note-taking modal for Part 2 questions
+      if (question?.questionType === "PART2" && !showNoteTakingModal) {
+        setShowNoteTakingModal(questionIdFromUrl);
+      }
+      
+      // Small delay to ensure DOM is fully rendered
+      const timer = setTimeout(() => {
+        const questionElement = questionRefs.current[questionIdFromUrl];
+        if (questionElement) {
+          questionElement.scrollIntoView({ 
+            behavior: "smooth", 
+            block: "center",
+          });
+          // Expand the question automatically
+          setExpandedQuestionId(questionIdFromUrl);
+          // Highlight the question temporarily
+          setHighlightedQuestionId(questionIdFromUrl);
+          // Remove highlight after 2 seconds
+          setTimeout(() => {
+            setHighlightedQuestionId(null);
+          }, 2000);
+        }
+      }, 300);
+
+      return () => clearTimeout(timer);
+    }
+  }, [questionIdFromUrl, questionsArray, isLoading, showNoteTakingModal]);
+
   const [generateOutline, { isLoading: isGeneratingOutline }] =
     useGenerateOutlineForQuestionMutation();
   const [submitAnswer, { isLoading: isSubmittingAnswer }] = useSubmitAnswerMutation();
@@ -306,6 +348,13 @@ export default function TopicDetail({ topicId, questionPartNumber }: TopicDetail
   const [generateAnswer] = useGenerateAnswerMutation();
   const [generateVocabulary] = useGenerateVocabularyMutation();
   const [improveAnswer] = useImproveAnswerMutation();
+  const [saveGeneratedVocabulary] = useSaveGeneratedVocabularyMutation();
+  const [isSavingGeneratedVocabByKey, setIsSavingGeneratedVocabByKey] = useState<
+    Record<string, boolean>
+  >({});
+  const [savedGeneratedVocabByKey, setSavedGeneratedVocabByKey] = useState<
+    Record<string, boolean>
+  >({});
 
   const handleToggleQuestion = (questionId: string) => {
     setExpandedQuestionId((current) => (current === questionId ? null : questionId));
@@ -749,8 +798,21 @@ export default function TopicDetail({ topicId, questionPartNumber }: TopicDetail
     if (isRecording) {
       stopRecording();
     } else {
-      handleStartRecording(questionId);
+      // Check if this is a Part 2 question
+      const question = questionsArray.find((q) => q.id === questionId);
+      if (question?.questionType === "PART2") {
+        // Show note-taking modal for Part 2
+        setShowNoteTakingModal(questionId);
+      } else {
+        // Start recording immediately for other question types
+        handleStartRecording(questionId);
+      }
     }
+  };
+  
+  const handleStartRecordingFromNotes = (questionId: string) => {
+    setShowNoteTakingModal(null);
+    handleStartRecording(questionId);
   };
 
   const handleCloseRecordingModal = () => {
@@ -941,6 +1003,14 @@ export default function TopicDetail({ topicId, questionPartNumber }: TopicDetail
         isOpen={activeRecordingQuestionId !== null} 
         onClose={handleCloseRecordingModal} 
       />
+      {showNoteTakingModal && (
+        <NoteTakingModal
+          isOpen={showNoteTakingModal !== null}
+          onClose={() => setShowNoteTakingModal(null)}
+          onStartRecording={() => showNoteTakingModal && handleStartRecordingFromNotes(showNoteTakingModal)}
+          questionText={questionsArray.find((q) => q.id === showNoteTakingModal)?.questionText}
+        />
+      )}
       <AudioConfirmationModal
         isOpen={showConfirmationModal !== null}
         audioBlob={currentConfirmationAudio ?? null}
@@ -1220,10 +1290,20 @@ export default function TopicDetail({ topicId, questionPartNumber }: TopicDetail
                   const isGeneratingStructures = isGeneratingStructuresByQuestion[question.id] ?? false;
                   const isGeneratingVocabulary = isGeneratingVocabularyByQuestion[question.id] ?? false;
 
+                  const isHighlighted = highlightedQuestionId === question.id;
+                  
                   return (
                     <div
                       key={question.id}
-                      className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm shadow-sm transition hover:border-brand-400 hover:bg-white dark:border-gray-800 dark:bg-gray-900/60 dark:hover:border-brand-500"
+                      ref={(el) => {
+                        questionRefs.current[question.id] = el;
+                      }}
+                      id={`question-${question.id}`}
+                      className={`rounded-lg border p-4 text-sm shadow-sm transition ${
+                        isHighlighted
+                          ? "border-brand-500 bg-brand-50 shadow-lg ring-2 ring-brand-300 dark:border-brand-400 dark:bg-brand-900/30 dark:ring-brand-600"
+                          : "border-gray-200 bg-gray-50 hover:border-brand-400 hover:bg-white dark:border-gray-800 dark:bg-gray-900/60 dark:hover:border-brand-500"
+                      }`}
                       onClick={() => handleToggleQuestion(question.id)}
                       role="button"
                       tabIndex={0}
@@ -1297,7 +1377,7 @@ export default function TopicDetail({ topicId, questionPartNumber }: TopicDetail
                               />
                             </svg>
                             <span className="font-medium text-brand-700 dark:text-brand-300">
-                              {question.attemptsCount} {t("topics.attempts", "lần trả lời")}
+                              {question.attemptsCount} {t("topics.totalAttempts", "tổng lượt thử")}
                             </span>
                             <svg
                               className="h-3 w-3 text-brand-600 dark:text-brand-400"
@@ -1315,13 +1395,13 @@ export default function TopicDetail({ topicId, questionPartNumber }: TopicDetail
                           </button>
                         ) : (
                           <span>
-                            {t("topics.attempts", "Attempts")}:{" "}
+                            {t("topics.attemptsLabel", "Total Attempts")}:{" "}
                             <span className="font-medium text-gray-800 dark:text-gray-200">
                               {question.attemptsCount ?? 0}
                             </span>
                           </span>
                         )}
-                        {typeof question.avgScore === "number" && (
+                        {isAdmin && typeof question.avgScore === "number" && (
                           <span>
                             {t("topics.avgScore", "Avg score")}:{" "}
                             <span className="font-medium text-gray-800 dark:text-gray-200">
@@ -1538,20 +1618,88 @@ export default function TopicDetail({ topicId, questionPartNumber }: TopicDetail
                                     key={index}
                                     className="rounded-md border border-amber-200 bg-white p-5 text-gray-800 dark:border-amber-800 dark:bg-gray-900 dark:text-gray-100"
                                   >
-                                    <div className="mb-2 flex items-center justify-between">
-                                      <p className="text-lg font-semibold text-amber-700 dark:text-amber-300">
-                                        {vocab.word}
-                                      </p>
-                                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                                        {vocab.pronunciation}
-                                      </p>
+                                    <div className="mb-2 flex items-start justify-between gap-3">
+                                      <div className="min-w-0">
+                                        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                                          <p className="text-lg font-semibold text-amber-700 dark:text-amber-300">
+                                            {vocab.word}
+                                          </p>
+                                          {vocab.pronunciation ? (
+                                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                              {vocab.pronunciation}
+                                            </p>
+                                          ) : null}
+                                        </div>
+                                      </div>
+
+                                      <button
+                                        type="button"
+                                        title={t("common.save", "Lưu")}
+                                        disabled={
+                                          isSavingGeneratedVocabByKey[`${question.id}:${vocab.word}`] ||
+                                          savedGeneratedVocabByKey[`${question.id}:${vocab.word}`]
+                                        }
+                                        onClick={async () => {
+                                          const key = `${question.id}:${vocab.word}`;
+                                          if (!vocab.word || !vocab.definition) {
+                                            alert(
+                                              t(
+                                                "topics.vocabMissingRequired",
+                                                "Thiếu word/definition nên chưa lưu được."
+                                              )
+                                            );
+                                            return;
+                                          }
+                                          try {
+                                            setIsSavingGeneratedVocabByKey((prev) => ({
+                                              ...prev,
+                                              [key]: true,
+                                            }));
+                                            await saveGeneratedVocabulary({
+                                              word: vocab.word,
+                                              definition: vocab.definition,
+                                              example: vocab.example,
+                                              pronunciation: vocab.pronunciation,
+                                              vietnamese_meaning: vocab.vietnameseMeaning,
+                                            }).unwrap();
+                                            setSavedGeneratedVocabByKey((prev) => ({
+                                              ...prev,
+                                              [key]: true,
+                                            }));
+                                          } catch (e) {
+                                            alert(getErrorMessage(e, t));
+                                          } finally {
+                                            setIsSavingGeneratedVocabByKey((prev) => ({
+                                              ...prev,
+                                              [key]: false,
+                                            }));
+                                          }
+                                        }}
+                                        className="flex-shrink-0 rounded-md bg-amber-600 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-amber-500 dark:hover:bg-amber-600"
+                                      >
+                                        {savedGeneratedVocabByKey[`${question.id}:${vocab.word}`]
+                                          ? t("common.saved", "Đã lưu")
+                                          : isSavingGeneratedVocabByKey[`${question.id}:${vocab.word}`]
+                                          ? t("common.saving", "Đang lưu...")
+                                          : t("common.save", "Lưu")}
+                                      </button>
                                     </div>
-                                    <p className="mb-3 text-base text-gray-700 dark:text-gray-300 leading-relaxed">
-                                      {vocab.definition}
-                                    </p>
-                                    <p className="text-sm italic text-gray-600 dark:text-gray-400 leading-relaxed">
-                                      {t("topics.example", "Example")}: {vocab.example}
-                                    </p>
+                                    {vocab.definition ? (
+                                      <p className="mb-3 text-base text-gray-700 dark:text-gray-300 leading-relaxed">
+                                        {vocab.definition}
+                                      </p>
+                                    ) : null}
+                                    {vocab.example ? (
+                                      <p className="text-sm italic text-gray-600 dark:text-gray-400 leading-relaxed">
+                                        {t("topics.example", "Example")}: {vocab.example}
+                                      </p>
+                                    ) : null}
+                                    {vocab.vietnameseMeaning ? (
+                                      <p className="mt-2 text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                                        <span className="font-semibold">VI:</span>{" "}
+                                        {vocab.vietnameseMeaning}
+                                      </p>
+                                    ) : null}
                                   </div>
                                 ))}
                               </div>
@@ -1979,6 +2127,7 @@ export default function TopicDetail({ topicId, questionPartNumber }: TopicDetail
           </div>
         </div>
 
+        {isAdmin && (
         <div className="space-y-4">
           <div className="rounded-xl border border-gray-200 bg-white p-6 text-sm shadow-sm dark:border-gray-800 dark:bg-gray-900">
             <h2 className="mb-4 text-base font-semibold text-gray-900 dark:text-white">
@@ -2031,6 +2180,7 @@ export default function TopicDetail({ topicId, questionPartNumber }: TopicDetail
             </dl>
           </div>
         </div>
+        )}
       </div>
     </div>
     </>

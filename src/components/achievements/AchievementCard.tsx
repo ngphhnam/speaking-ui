@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import Image from "next/image";
 import { AchievementDto } from "@/store/api/achievementApi";
 
 interface AchievementCardProps {
@@ -41,19 +40,28 @@ const AchievementCard: React.FC<AchievementCardProps> = ({
         {/* Badge Icon */}
         <div className="flex-shrink-0">
           {achievement.badgeIconUrl ? (
-            <div className="relative h-16 w-16 overflow-hidden rounded-full border-2 border-gray-200 dark:border-gray-700">
-              <Image
-                src={achievement.badgeIconUrl}
-                alt={achievement.title}
-                fill
-                className="object-cover"
-              />
-            </div>
-          ) : (
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-purple-500 text-2xl text-white">
-              🏆
-            </div>
-          )}
+            <img
+              src={achievement.badgeIconUrl}
+              alt={achievement.title}
+              className="h-12 w-12 flex-shrink-0 rounded-lg object-cover"
+              onError={(e) => {
+                // Hide image on error, show emoji fallback
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                const parent = target.parentElement;
+                if (parent) {
+                  const emoji = parent.querySelector('.emoji-fallback') as HTMLElement;
+                  if (emoji) emoji.style.display = 'block';
+                }
+              }}
+            />
+          ) : null}
+          <div className={`text-3xl emoji-fallback ${achievement.badgeIconUrl ? 'hidden' : 'block'}`}>
+            {achievement.achievementType === "practice_streak" && "🔥"}
+            {achievement.achievementType === "total_questions" && "📝"}
+            {achievement.achievementType === "score_milestone" && "⭐"}
+            {achievement.achievementType === "total_practice_days" && "📅"}
+          </div>
         </div>
 
         {/* Content */}

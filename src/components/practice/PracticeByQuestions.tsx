@@ -18,7 +18,8 @@ export default function PracticeByQuestions() {
   const [mounted, setMounted] = useState(false);
   const [selectedPart, setSelectedPart] = useState<number | null>(1); // Default to Part 1
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
-  const [hideAnswered, setHideAnswered] = useState(false);
+  // Note: hideAnswered state kept but disabled until we have API for current user's attempts
+  // const [hideAnswered, setHideAnswered] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isMobileTopicsOpen, setIsMobileTopicsOpen] = useState(false);
 
@@ -258,15 +259,16 @@ export default function PracticeByQuestions() {
         {/* Search and Filter Row */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
-            <label className="flex items-center gap-2 cursor-pointer">
+            {/* Disabled until we have API for current user's attempts */}
+            <label className="flex items-center gap-2 cursor-not-allowed opacity-50">
               <input
                 type="checkbox"
-                checked={hideAnswered}
-                onChange={(e) => setHideAnswered(e.target.checked)}
+                checked={false}
+                disabled
                 className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
               />
-              <span className="text-sm text-gray-700 dark:text-gray-300">
-                {t("practice.byQuestions.hideAnswered", "Ẩn câu đã trả lời")}
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                {t("practice.byQuestions.hideAnswered", "Ẩn câu đã trả lời")} ({t("practice.byQuestions.comingSoon", "Sắp có")})
               </span>
             </label>
             <div className="relative flex-1 sm:max-w-xs">
@@ -321,9 +323,11 @@ export default function PracticeByQuestions() {
         <div className="space-y-8">
           {filteredTopics.map((topic) => {
             const questions = questionsByTopic[topic.id] ?? [];
-            const visibleQuestions = hideAnswered
-              ? questions.filter((q) => !q.attemptsCount || q.attemptsCount === 0)
-              : questions;
+            // Note: hideAnswered filter is disabled because we don't have API for current user's attempts yet
+            // const visibleQuestions = hideAnswered
+            //   ? questions.filter((q) => !q.attemptsCount || q.attemptsCount === 0)
+            //   : questions;
+            const visibleQuestions = questions;
 
             if (visibleQuestions.length === 0) return null;
 
@@ -344,6 +348,19 @@ export default function PracticeByQuestions() {
                         ? `/topics/${topic.id}/part3?questionId=${question.id}`
                         : `/topics/${topic.id}?questionId=${question.id}`;
 
+                    // Extract main question text (before "You should say...")
+                    const extractMainQuestion = (text: string): string => {
+                      // Check if text contains "You should say" pattern
+                      const youShouldSayIndex = text.toLowerCase().indexOf("you should say");
+                      if (youShouldSayIndex > -1) {
+                        // Return only the part before "You should say"
+                        return text.substring(0, youShouldSayIndex).trim();
+                      }
+                      return text;
+                    };
+
+                    const mainQuestionText = extractMainQuestion(question.questionText);
+
                     return (
                       <Link
                         key={question.id}
@@ -351,15 +368,8 @@ export default function PracticeByQuestions() {
                         className="group rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:border-brand-500 hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:border-brand-500"
                       >
                         <p className="text-sm text-gray-900 dark:text-white line-clamp-3 group-hover:text-brand-600 dark:group-hover:text-brand-400">
-                          {question.questionText}
+                          {mainQuestionText}
                         </p>
-                        {question.attemptsCount && question.attemptsCount > 0 && (
-                          <div className="mt-2 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-                              {t("practice.byQuestions.answered")}
-                            </span>
-                          </div>
-                        )}
                       </Link>
                     );
                   })}

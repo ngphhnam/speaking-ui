@@ -3,6 +3,7 @@ import "./globals.css";
 
 import { SidebarProvider } from "@/context/SidebarContext";
 import { ThemeProvider } from "@/context/ThemeContext";
+import AuthSessionProvider from "@/providers/AuthSessionProvider";
 import StoreProvider from "@/providers/StoreProvider";
 import TranslationProvider from "@/providers/TranslationProvider";
 
@@ -21,7 +22,9 @@ export default function RootLayout({
         <StoreProvider>
           <ThemeProvider>
             <TranslationProvider>
+              <AuthSessionProvider>
             <SidebarProvider>{children}</SidebarProvider>
+              </AuthSessionProvider>
             </TranslationProvider>
           </ThemeProvider>
         </StoreProvider>

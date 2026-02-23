@@ -12,6 +12,7 @@ import { useLoginMutation, useMeQuery } from "@/store/api/authApi";
 import { useTranslation } from "react-i18next";
 import { LanguageToggleButton } from "@/components/common/LanguageToggleButton";
 import { getErrorMessage } from "@/utils/errorHandler";
+import { signIn } from "next-auth/react";
 
 export default function SignInForm() {
   const router = useRouter();
@@ -20,6 +21,7 @@ export default function SignInForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+  const [isOAuthLoading, setIsOAuthLoading] = useState(false);
 
   const [login, { isLoading }] = useLoginMutation();
   const { data: me, isLoading: isLoadingMe, isError: isMeError } = useMeQuery(undefined, {
@@ -40,10 +42,10 @@ export default function SignInForm() {
         if (redirect) {
           router.replace(decodeURIComponent(redirect));
         } else {
-          router.replace("/");
+          router.replace("/dashboard");
         }
       } else {
-        router.replace("/");
+        router.replace("/dashboard");
       }
     }
   }, [me, isLoadingMe, isMeError, router]);
@@ -51,6 +53,28 @@ export default function SignInForm() {
   const isSubmitDisabled = useMemo(() => {
     return !email.trim() || !password.trim() || isLoading;
   }, [email, password, isLoading]);
+
+  const getCallbackUrl = () => {
+    if (typeof window === "undefined") return "/dashboard";
+    const searchParams = new URLSearchParams(window.location.search);
+    const redirect = searchParams.get("redirect");
+    return redirect ? decodeURIComponent(redirect) : "/dashboard";
+  };
+
+  const handleGoogleSignIn = async () => {
+    setFormError(null);
+    setIsOAuthLoading(true);
+    try {
+      // Redirect-based flow; after OAuth we land on our callback page,
+      // which calls backend `/api/auth/social-login` to establish cookie session.
+      const redirectTo = getCallbackUrl();
+      const callbackUrl = `/social-callback?redirect=${encodeURIComponent(redirectTo)}`;
+      await signIn("google", { callbackUrl });
+    } catch (error) {
+      setIsOAuthLoading(false);
+      setFormError(getErrorMessage(error, t, t("auth.signInError", "Unable to sign in. Please try again.")));
+    }
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -61,7 +85,7 @@ export default function SignInForm() {
     setFormError(null);
     try {
       await login({ email: email.trim(), password }).unwrap();
-      router.push("/");
+      router.push("/dashboard");
     } catch (error) {
       setFormError(getErrorMessage(error, t, t("auth.signInError", "Unable to sign in. Please try again.")));
     }
@@ -96,7 +120,12 @@ export default function SignInForm() {
           </div>
           <div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5">
-              <button className="inline-flex items-center justify-center gap-3 py-3 text-sm font-normal text-gray-700 transition-colors bg-gray-100 rounded-lg px-7 hover:bg-gray-200 hover:text-gray-800 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10">
+              <button
+                type="button"
+                onClick={handleGoogleSignIn}
+                disabled={isOAuthLoading || isLoading}
+                className="inline-flex items-center justify-center gap-3 py-3 text-sm font-normal text-gray-700 transition-colors bg-gray-100 rounded-lg px-7 hover:bg-gray-200 hover:text-gray-800 disabled:opacity-60 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10"
+              >
                 <svg
                   width="20"
                   height="20"
@@ -147,7 +176,7 @@ export default function SignInForm() {
                 </span>
               </div>
             </div>
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} autoComplete="on">
               <div className="space-y-6">
                 <div>
                   <Label>
@@ -155,10 +184,12 @@ export default function SignInForm() {
                     <span className="text-error-500">*</span>{" "}
                   </Label>
                   <Input
+                    name="email"
                     placeholder={t("auth.emailPlaceholder", "Enter your email")}
                     type="email"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
+                    autoComplete="username"
                   />
                 </div>
                 <div>
@@ -168,10 +199,12 @@ export default function SignInForm() {
                   </Label>
                   <div className="relative">
                     <Input
+                      name="password"
                       type={showPassword ? "text" : "password"}
                       placeholder={t("auth.passwordPlaceholder", "Enter your password")}
                       value={password}
                       onChange={(event) => setPassword(event.target.value)}
+                      autoComplete="current-password"
                     />
                     <span
                       onClick={() => setShowPassword(!showPassword)}

@@ -6,6 +6,7 @@ import { useGetUserStatisticsQuery } from "@/store/api/statisticsApi";
 import { useGetAllSessionsQuery } from "@/store/api/speakingSessionApi";
 import { useAppSelector } from "@/store/hooks";
 import { skipToken } from "@reduxjs/toolkit/query";
+import LearningHistorySessionItem from "@/components/learning-history/LearningHistorySessionItem";
 
 export default function LearningHistoryShell() {
   const { t } = useTranslation();
@@ -14,6 +15,7 @@ export default function LearningHistoryShell() {
   const [filterScore, setFilterScore] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [pageNum, setPageNum] = useState(1);
+  const [openSessionId, setOpenSessionId] = useState<string | null>(null);
   const pageSize = 5;
 
   const userId = user?.id ?? "";
@@ -167,7 +169,7 @@ export default function LearningHistoryShell() {
 
       {/* Statistics Cards */}
       {statistics && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="rounded-xl border-2 border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
             <p className="text-sm text-gray-600 dark:text-gray-400">
               {t("learningHistory.totalRecordings", "Tổng bài làm")}
@@ -188,15 +190,6 @@ export default function LearningHistoryShell() {
               {statistics.averageScore
                 ? statistics.averageScore.toFixed(1)
                 : "N/A"}
-            </p>
-          </div>
-          <div className="rounded-xl border-2 border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              {t("learningHistory.practiceTime", "Thời gian luyện")}
-            </p>
-            <p className="mt-2 text-3xl font-bold text-purple-600 dark:text-purple-400">
-              {Math.floor(statistics.totalPracticeTime / 60)}h{" "}
-              {statistics.totalPracticeTime % 60}m
             </p>
           </div>
         </div>
@@ -225,46 +218,23 @@ export default function LearningHistoryShell() {
           </div>
         ) : (
           filteredSessions.map((session, index) => (
-            <div
-              key={session.id}
-              className="group rounded-xl border-2 border-gray-200 bg-white p-5 transition hover:border-brand-500 hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:border-brand-500"
-            >
-              <div className="flex items-start gap-4">
-                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-brand-100 dark:bg-brand-900/30">
-                  <span className="text-sm font-bold text-brand-600 dark:text-brand-400">
-                    #{(sessionsPage?.totalCount ?? 0) - ((pageNum - 1) * pageSize + index)}
-                  </span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-medium text-gray-900 dark:text-white line-clamp-2">
-                    {session.topic || "N/A"}
-                  </h3>
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            <div key={session.id} className="space-y-2">
+              {/* Keep the index badge info above for continuity */}
+              <div className="flex items-center justify-between px-1">
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  #{(sessionsPage?.totalCount ?? 0) -
+                    ((pageNum - 1) * pageSize + index)} ·{" "}
                     {formatDate(session.createdAt)}
-                  </p>
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    {t("learningHistory.status", "Trạng thái")}:{" "}
-                    <span className="capitalize">{session.status}</span>
-                  </p>
-                </div>
-                <div className="flex flex-shrink-0 items-center gap-3">
-                  {session.overallBandScore != null && (
-                    <div
-                      className={`flex h-14 w-14 items-center justify-center rounded-lg ${getScoreBg(
-                        session.overallBandScore
-                      )}`}
-                    >
-                      <span
-                        className={`text-lg font-bold ${getScoreColor(
-                          session.overallBandScore
-                        )}`}
-                      >
-                        {session.overallBandScore.toFixed(1)}
-                      </span>
-                    </div>
-                  )}
                 </div>
               </div>
+              <LearningHistorySessionItem
+                session={session}
+                userId={userId}
+                isOpen={openSessionId === session.id}
+                onToggle={() =>
+                  setOpenSessionId((prev) => (prev === session.id ? null : session.id))
+                }
+              />
             </div>
           ))
         )}

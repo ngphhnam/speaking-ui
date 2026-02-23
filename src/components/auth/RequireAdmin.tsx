@@ -55,7 +55,7 @@ const RequireAdmin: React.FC<RequireAdminProps> = ({ children }) => {
 
     // If we have user data and they're not admin, redirect to home
     if (currentUser && currentUser.role !== "Admin") {
-      router.replace("/");
+      router.replace("/dashboard");
     }
   }, [user, me, isLoadingMe, isMeError, pathname, router]);
 

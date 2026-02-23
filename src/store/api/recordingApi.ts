@@ -71,6 +71,18 @@ export const recordingApi = createApi({
   }),
   tagTypes: ["Recording", "AnalysisResult"],
   endpoints: (builder) => ({
+    getRecordingsBySession: builder.query<RecordingDto[], string>({
+      query: (sessionId) => `/api/recordings?sessionId=${sessionId}`,
+      transformResponse: (response: ApiResponse<RecordingDto[]>) => {
+        if (Array.isArray(response.data)) {
+          return response.data;
+        }
+        return [response.data];
+      },
+      providesTags: (result, error, sessionId) => [
+        { type: "Recording", id: `session-${sessionId}` },
+      ],
+    }),
     getRecordingsByQuestion: builder.query<RecordingDto[], string>({
       query: (questionId) => `/api/recordings?questionId=${questionId}`,
       transformResponse: (response: ApiResponse<RecordingDto[]>) => {
@@ -148,6 +160,7 @@ export const recordingApi = createApi({
 });
 
 export const {
+  useGetRecordingsBySessionQuery,
   useGetRecordingsByQuestionQuery,
   useGetRecordingByIdQuery,
   useGetAnalysisResultByRecordingQuery,

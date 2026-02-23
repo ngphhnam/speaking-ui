@@ -45,6 +45,7 @@ export const questionApi = createApi({
     }),
     getQuestionById: builder.query<QuestionDto, string>({
       query: (id) => `/api/questions/${id}`,
+      transformResponse: (response: ApiResponse<QuestionDto>) => response.data,
       providesTags: (result, error, id) => [{ type: "Question", id }],
     }),
     generateOutlineForQuestion: builder.mutation<

@@ -41,6 +41,15 @@ export interface UpdateUserVocabularyRequest {
   personalNotes?: string;
 }
 
+export type SaveGeneratedVocabularyRequest = {
+  word: string;
+  definition: string;
+  example?: string;
+  pronunciation?: string;
+  vietnamese_meaning?: string;
+  personalNotes?: string;
+};
+
 interface ApiResponse<T> {
   success: boolean;
   data: T;
@@ -67,7 +76,7 @@ export const userVocabularyApi = createApi({
   tagTypes: ["UserVocabulary"],
   endpoints: (builder) => ({
     getUserVocabulary: builder.query<UserVocabularyDto[], string>({
-      query: (userId) => `/api/uservocabulary/user/${userId}`,
+      query: (userId) => `/api/user-vocabulary/user/${userId}`,
       transformResponse: (response: ApiResponse<UserVocabularyDto[]>) =>
         response.data ?? [],
       providesTags: (result, error, userId) => [
@@ -75,7 +84,7 @@ export const userVocabularyApi = createApi({
       ],
     }),
     getLearningVocabulary: builder.query<UserVocabularyDto[], string>({
-      query: (userId) => `/api/uservocabulary/user/${userId}/learning`,
+      query: (userId) => `/api/user-vocabulary/user/${userId}/learning`,
       transformResponse: (response: ApiResponse<UserVocabularyDto[]>) =>
         response.data ?? [],
       providesTags: (result, error, userId) => [
@@ -83,7 +92,7 @@ export const userVocabularyApi = createApi({
       ],
     }),
     getMasteredVocabulary: builder.query<UserVocabularyDto[], string>({
-      query: (userId) => `/api/uservocabulary/user/${userId}/mastered`,
+      query: (userId) => `/api/user-vocabulary/user/${userId}/mastered`,
       transformResponse: (response: ApiResponse<UserVocabularyDto[]>) =>
         response.data ?? [],
       providesTags: (result, error, userId) => [
@@ -91,7 +100,7 @@ export const userVocabularyApi = createApi({
       ],
     }),
     getDueForReview: builder.query<UserVocabularyDto[], string>({
-      query: (userId) => `/api/uservocabulary/user/${userId}/due-for-review`,
+      query: (userId) => `/api/user-vocabulary/user/${userId}/due-for-review`,
       transformResponse: (response: ApiResponse<UserVocabularyDto[]>) =>
         response.data ?? [],
       providesTags: (result, error, userId) => [
@@ -103,7 +112,7 @@ export const userVocabularyApi = createApi({
       AddVocabularyToUserListRequest
     >({
       query: (body) => ({
-        url: "/api/uservocabulary",
+        url: "/api/user-vocabulary",
         method: "POST",
         body,
       }),
@@ -116,7 +125,7 @@ export const userVocabularyApi = createApi({
       { userVocabularyId: string; data: UpdateUserVocabularyRequest }
     >({
       query: ({ userVocabularyId, data }) => ({
-        url: `/api/uservocabulary/${userVocabularyId}`,
+        url: `/api/user-vocabulary/${userVocabularyId}`,
         method: "PUT",
         body: data,
       }),
@@ -132,7 +141,7 @@ export const userVocabularyApi = createApi({
       { userVocabularyId: string; correct: boolean }
     >({
       query: ({ userVocabularyId, correct }) => ({
-        url: `/api/uservocabulary/${userVocabularyId}/review`,
+        url: `/api/user-vocabulary/${userVocabularyId}/review`,
         method: "PUT",
         body: correct,
       }),
@@ -141,12 +150,24 @@ export const userVocabularyApi = createApi({
       invalidatesTags: ["UserVocabulary"],
     }),
     getVocabularyStatistics: builder.query<VocabularyStatistics, string>({
-      query: (userId) => `/api/uservocabulary/user/${userId}/statistics`,
+      query: (userId) => `/api/user-vocabulary/user/${userId}/statistics`,
       transformResponse: (response: ApiResponse<VocabularyStatistics>) =>
         response.data,
       providesTags: (result, error, userId) => [
         { type: "UserVocabulary", id: `stats-${userId}` },
       ],
+    }),
+    saveGeneratedVocabulary: builder.mutation<
+      any,
+      SaveGeneratedVocabularyRequest
+    >({
+      query: (body) => ({
+        url: "/api/user-vocabulary/save-generated",
+        method: "POST",
+        body,
+      }),
+      transformResponse: (response: ApiResponse<any>) => response.data,
+      invalidatesTags: ["UserVocabulary"],
     }),
   }),
 });
@@ -160,6 +181,7 @@ export const {
   useUpdateUserVocabularyMutation,
   useMarkAsReviewedMutation,
   useGetVocabularyStatisticsQuery,
+  useSaveGeneratedVocabularyMutation,
 } = userVocabularyApi;
 
 

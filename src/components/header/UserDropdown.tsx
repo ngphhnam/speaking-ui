@@ -190,7 +190,7 @@ function toggleDropdown(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
                   fill=""
                 />
               </svg>
-              {t("userDropdown.dashboard", "Bảng điều khiển")}
+              {t("userDropdown.dashboard", "Trang chủ")}
             </DropdownItem>
           </li>
         </ul>
